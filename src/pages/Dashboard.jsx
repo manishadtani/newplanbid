@@ -230,7 +230,7 @@ function Dashboard() {
       console.error("Export error:", error);
       showFeatureRestriction(
         "Export Failed",
-        "Something went wrong while exporting. Please try again.",
+        "Please Upgrade your plan for exporting Bids.",
         "Export Feature",
         false
       );
