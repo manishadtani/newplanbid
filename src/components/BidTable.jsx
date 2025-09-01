@@ -46,7 +46,8 @@ const convertToCSV = (rows) => {
   return [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
 };
 
-const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { },  onFeatureRestriction = () => { } }, ref) => {
+const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { }}, ref) => {
+  // onFeatureRestriction = () => { } 
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -67,46 +68,53 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
     
-  const handleRowClick = async (id) => {
-  try {
-    console.log("🔥 Fetching bid details for ID:", id);
+//   const handleRowClick = async (id) => {
+//   try {
+//     console.log("🔥 Fetching bid details for ID:", id);
     
-    // API call karke bid details fetch karo
-    const bidDetails = await getBids(id); // Single bid fetch
+//     // API call karke bid details fetch karo
+//     const bidDetails = await getBids(id); // Single bid fetch
     
-    console.log("✅ Bid details fetched successfully");
-    // Agar success hai to navigate karo
-    navigate(`/summary/${id}`);
+//     console.log("✅ Bid details fetched successfully");
+//     // Agar success hai to navigate karo
+//     navigate(`/summary/${id}`);
     
-  } catch (error) {
-    console.error("❌ Error fetching bid details:", error);
+//   } catch (error) {
+//     console.error("❌ Error fetching bid details:", error);
     
-    // Check if it's a restriction error (403 status)
-    if (error.response?.status === 403) {
-      const errorMessage = error.response?.data?.detail || "Upgrade your plan to view this bid summary.";
+//     // Check if it's a restriction error (403 status)
+//     if (error.response?.status === 403) {
+//       const errorMessage = error.response?.data?.detail || "Upgrade your plan to view this bid summary.";
       
-      // Popup show karo using parent function
-      if (onFeatureRestriction) {
-        onFeatureRestriction(
-          "Bid Summary Restricted",
-          errorMessage,
-          "Bid Summary Access",
-          true
-        );
-      }
-    } else {
-      // Other errors ke liye generic message
-      if (onFeatureRestriction) {
-        onFeatureRestriction(
-          "Error Loading Bid",
-          "Unable to load bid details. Please try again.",
-          "Bid Access",
-          false
-        );
-      }
-    }
-  }
-};
+//       // Popup show karo using parent function
+//       if (onFeatureRestriction) {
+//         onFeatureRestriction(
+//           "Bid Summary Restricted",
+//           errorMessage,
+//           "Bid Summary Access",
+//           true
+//         );
+//       }
+//     } else {
+//       // Other errors ke liye generic message
+//       if (onFeatureRestriction) {
+//         onFeatureRestriction(
+//           "Error Loading Bid",
+//           "Unable to load bid details. Please try again.",
+//           "Bid Access",
+//           false
+//         );
+//       }
+//     }
+//   }
+// };
+
+
+
+  const handleRowClick = (id) => {
+    console.log(id);
+    navigate(`/summary/${id}`);
+  };
 
   const exportToCSV = () => {
     const csv = convertToCSV(data);
