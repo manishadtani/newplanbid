@@ -21,6 +21,8 @@ import FeatureRestrictionPopup from "../components/FeatureRestrictionPopup";
 // 🔥 IMPORT URL HELPERS AND CONSTANTS
 import { decodeUrlToFilters, buildQueryString } from "../utils/urlHelpers";
 import { DASHBOARD_CONSTANTS } from "../utils/constants";
+// Top imports me ye add karo
+import { usePlan } from "../hooks/usePlan";
 
 // 🔥 IMPORT CUSTOM HOOKS
 import { useSearchHandling } from "../hooks/useSearchHandling";
@@ -71,6 +73,8 @@ function Dashboard() {
     setSaveSearchFilters,
     handleOpenFilter
   } = useDashboardUI();
+
+  const { validateFeatureUsage, hasFeatureAccess, getLimit } = usePlan();
 
   // 🔥 REMAINING LOCAL STATE
   const [bidCount, setBidCount] = useState({ count: 0, new_bids: 0 });
@@ -138,7 +142,59 @@ function Dashboard() {
   };
 
 
+  // const handleExport = async () => {
+  //   setExportLoading(true);
+
+  //   try {
+  //     const bidIds = getCurrentBidIds();
+
+  //     if (bidIds.length === 0) {
+  //       showFeatureRestriction(
+  //         "No Data to Export",
+  //         "No bids found to export. Please apply filters or search to display bids.",
+  //         "Export Feature",
+  //         false
+  //       );
+  //       setExportLoading(false);
+  //       return;
+  //     }
+
+  //     console.log("🔥 Exporting bid IDs:", bidIds);
+
+  //     const result = await exportBidsToCSV(bidIds);
+
+  //     if (result.success) {
+  //       console.log("✅ Export successful");
+  //       // Optionally show success message
+  //     } else if (result.error) {
+  //       // Show restriction popup with backend error message
+  //       showFeatureRestriction(
+  //         result.title || "Export Failed",
+  //         result.message,
+  //         "Export Feature",
+  //         result.needsUpgrade || false
+  //       );
+  //     }
+
+  //   } catch (error) {
+  //     console.error("❌ Export error:", error);
+  //     showFeatureRestriction(
+  //       "Export Failed",
+  //       "Something went wrong while exporting. Please try again.",
+  //       "Export Feature",
+  //       false
+  //     );
+  //   } finally {
+  //     setExportLoading(false);
+  //   }
+  // };
+
   const handleExport = async () => {
+    // Client-side plan validation
+    if (!validateFeatureUsage('export', showFeatureRestriction)) {
+      return; // Popup automatically shown by validateFeatureUsage
+    }
+
     setExportLoading(true);
 
     try {
@@ -155,15 +211,13 @@ function Dashboard() {
         return;
       }
 
-      console.log("🔥 Exporting bid IDs:", bidIds);
-
+      // Proceed with API call (keep existing logic as fallback)
       const result = await exportBidsToCSV(bidIds);
 
       if (result.success) {
-        console.log("✅ Export successful");
-        // Optionally show success message
+        console.log("Export successful");
       } else if (result.error) {
-        // Show restriction popup with backend error message
+        // Fallback to API error messages if plan validation missed something
         showFeatureRestriction(
           result.title || "Export Failed",
           result.message,
@@ -173,7 +227,7 @@ function Dashboard() {
       }
 
     } catch (error) {
-      console.error("❌ Export error:", error);
+      console.error("Export error:", error);
       showFeatureRestriction(
         "Export Failed",
         "Something went wrong while exporting. Please try again.",
@@ -185,61 +239,88 @@ function Dashboard() {
     }
   };
 
+  // Dashboard.jsx - Updated handleFollowBid function
 
-  const handleFollowBid = async (bidId) => {
-    // Add bid to loading state
-    setFollowLoading(prev => new Set([...prev, bidId]));
+const handleFollowBid = async (bidId) => {
+  // Plan validation first
+  if (!validateFeatureUsage('follow', showFeatureRestriction, followedBids.size)) {
+    return;
+  }
 
-    try {
-      console.log("🔥 Following bid with ID:", bidId);
+  // Add bid to loading state
+  setFollowLoading(prev => new Set([...prev, bidId]));
 
-      const result = await followBids(bidId);
+  try {
+    console.log("🔥 Following bid with ID:", bidId);
 
-      console.log("✅ Follow successful:", result);
+    const result = await followBids(bidId);
+    console.log("✅ Follow successful:", result);
 
-      // Update followed bids state
+    // Update followed bids state
+    setFollowedBids(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(bidId)) {
+        // If already followed, remove it (unfollow)
+        newSet.delete(bidId);
+        console.log("🔄 Unfollowed bid:", bidId);
+      } else {
+        // If not followed, add it
+        newSet.add(bidId);
+        console.log("➕ Followed bid:", bidId);
+      }
+      return newSet;
+    });
+
+  } catch (error) {
+    console.error("❌ Follow error:", error);
+
+    // 🔥 NEW: Handle "already following" error
+    const errorDetail = error.response?.data?.detail || "";
+    
+    if (errorDetail.includes("already following")) {
+      // If already following, just add to followed state
+      console.log("ℹ️ Already following - updating state");
+      
       setFollowedBids(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(bidId)) {
-          // If already followed, remove it (unfollow)
-          newSet.delete(bidId);
-          console.log("🔄 Unfollowed bid:", bidId);
-        } else {
-          // If not followed, add it
-          newSet.add(bidId);
-          console.log("➕ Followed bid:", bidId);
-        }
+        newSet.add(bidId);
         return newSet;
       });
 
-    } catch (error) {
-      console.error("❌ Follow error:", error);
-
-      // Check if it's a restriction error from backend
-      if (error.response?.data?.error) {
-        showFeatureRestriction(
-          error.response.data.title || "Follow Failed",
-          error.response.data.message || "Unable to follow this bid.",
-          "Follow Feature",
-          error.response.data.needsUpgrade || true
-        );
-      } else {
-        showFeatureRestriction(
-          "Follow Failed",
-          "Something went wrong while following this bid. Please try again.",
-          "Follow Feature",
-          false
-        );
-      }
-    } finally {
-      // Remove bid from loading state
-      setFollowLoading(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(bidId);
-        return newSet;
-      });
+      // Show info message instead of error
+      showFeatureRestriction(
+        "Already Following",
+        "You are already following this bid. Updates will be sent to your email.",
+        "Follow Status",
+        false // No upgrade button needed
+      );
+      
+    } else if (error.response?.status === 403 || error.response?.data?.error) {
+      // Plan restriction errors
+      showFeatureRestriction(
+        error.response.data.title || "Follow Failed",
+        error.response.data.message || "Unable to follow this bid.",
+        "Follow Feature",
+        error.response.data.needsUpgrade || true
+      );
+    } else {
+      // Other errors
+      showFeatureRestriction(
+        "Follow Failed",
+        "Something went wrong while following this bid. Please try again.",
+        "Follow Feature",
+        false
+      );
     }
-  };
+  } finally {
+    // Remove bid from loading state
+    setFollowLoading(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(bidId);
+      return newSet;
+    });
+  }
+};
 
 
   // 🔥 REPLACE YOUR EXISTING popstate useEffect WITH THIS:
@@ -820,8 +901,9 @@ function Dashboard() {
                 <div className="flex gap-4 items-center">
                   {/* 🚀 UPDATED EXPORT BUTTON WITH LOADING STATE */}
                   <div
-                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading ? 'opacity-50' : ''}`}
-                    onClick={exportLoading ? null : handleExport}
+                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading || !hasFeatureAccess('export') ? 'opacity-50' : ''
+                      }`}
+                    onClick={exportLoading || !hasFeatureAccess('export') ? null : handleExport}
                     id="export"
                   >
                     {exportLoading ? (
