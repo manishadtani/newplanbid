@@ -166,10 +166,17 @@ function Login() {
                 message={errors.password}
                 messageType={getMessageType("password")}
               />
+              <div className="float-right pr-20">
               {loginError && (
-                <div style={{ marginTop: "18px", color: "#ef4444", fontSize: "15px" }}>{loginError}</div>
+                <div style={{ marginTop: "2px", color: "#ef4444", fontSize: "15px" }}>{loginError}</div>
               )}
+              </div>
+              <Link to="/forgot-password" >  
+               <span className="text-white text-sm underline">Forgot Password</span>
+               </Link>
             </div>
+
+           
             <FormFooter data={formFooter} onNextClick={handleLogin} />
           </form>
         </div>

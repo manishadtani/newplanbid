@@ -8,7 +8,7 @@ function Pricing() {
     <div className='pricing-page'>
         <PricingHero />
         <Billing />
-        <Faq />
+        {/* <Faq /> */}
     </div>
   )
 }

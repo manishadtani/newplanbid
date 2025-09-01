@@ -18,13 +18,37 @@ const Footer = () => {
           </div>
 
           {/* Middle Section: Navigation */}
-          <div className="flex flex-wrap flex-col sm:flex-row gap-8 md:gap-12 xl:gap-16 xl:justify-end md:col-span-2">
+          <div className="flex flex-wrap   flex-col sm:flex-row gap-8 md:gap-12 xl:gap-16 xl:justify-end md:col-span-2">
             {[
-              { title: "Home", links: ["Lorem", "Lorem", "Lorem", "Lorem"], delay:"100" },
-              { title: "AI Toolset", links: ["Lorem"], delay:"200" },
-              { title: "Bids", links: ["Lorem", "Lorem", "Lorem"], delay:"300" },
-              { title: "About Us", links: ["Lorem", "Lorem"], delay:"400" },
-              { title: "Help Center", links: ["Lorem", "Lorem"], delay:"500" },
+              { 
+                title: "Home", 
+                links: [
+                  { name: "A.I. Toolkit", url: "/ai-toolset" },
+                  { name: "Why BidInsight?", url: "/why-bidinsight" },
+                  { name: "Register Now!", url: "/register" },
+                  { name: "Plans & Pricing", url: "/pricing" }
+                ], 
+                delay:"100" 
+              },
+              { 
+                title: "Plans & Pricing", 
+                links: [
+                  { name: "Pricing", url: "/pricing" },
+                  { name: "Features", url: "/features" },
+                  { name: "FAQs", url: "/faqs" }
+                ], 
+                delay:"400" 
+              },
+              { 
+                title: "About Us", 
+                links: [
+                  { name: "Mission", url: "/mission" },
+                  { name: "Vision", url: "/vision" },
+                  { name: "Our Story", url: "/our-story" },
+                  { name: "Core Values", url: "/core-values" }
+                ], 
+                delay:"400" 
+              },
             ].map((section, idx) => (
               <div key={idx} data-aos="fade-left" data-aos-delay={section.delay}>
                 <h3 className="font-semibold mb-2 font-t body-t">
@@ -33,12 +57,12 @@ const Footer = () => {
                 <ul className="space-y-1 text-sm text-gray-300">
                   {section.links.map((link, i) => (
                     <li key={i}>
-                      <a
-                        href="#"
+                      <Link
+                        to={link.url}
                         className="hover:text-white font-t body-t mt-4 block"
                       >
-                        {link}
-                      </a>
+                        {link.name}
+                      </Link>
                     </li>
                   ))}
                 </ul>

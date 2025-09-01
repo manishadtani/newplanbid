@@ -7,10 +7,12 @@ import ScrollToTop from "./components/ScrollToTop";
 import BidTableSkeleton from "./components/shimmereffects/BidTableSkeleton";
 import ProtectedRoute from "./protectedRoute/ProtectedRoute";
 import ShimmerSummaryCard from "./components/shimmereffects/ShimmerSummaryCard.jsx";
-import IndustryCategoriesSkeletonLeft from "./components/shimmereffects/IndustryCategoriesSkeletonLeft.jsx";
 import AiToolSet from "./pages/AiToolSet.jsx";
 import HelpCenter from "./pages/HelpCenter.jsx";
-// import CompanyBuildProtectedRoute from "./protectedRoute/CompanyBuildProtectedRoute";  
+import OTPVerification from "./components/OTPVerification.jsx";
+
+
+
 
 
 // Lazy-loaded Pages
@@ -49,6 +51,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="forgot-password" element={<OTPVerification />} />
           <Route path="/register" element={<Register />} />
           <Route path="/company-build" element={<CompanyBuild />} />
           <Route path="/help" element={<ProtectedRoute><HelpCenter /> </ProtectedRoute>} />
@@ -62,6 +65,7 @@ const App = () => {
           <Route path="/email-verification" element={<EmailVerification />} />
           <Route path="/verification" element={<Verification />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+           <Route path="/dashboard/bookmarkBids" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/summary/:id" element={<Suspense fallback={<ShimmerSummaryCard />}> <ProtectedRoute><SummaryPage /></ProtectedRoute> </Suspense>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about" element={<AboutUs />} />

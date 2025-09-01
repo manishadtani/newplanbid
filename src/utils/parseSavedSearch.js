@@ -7,10 +7,24 @@ export const parseSavedSearch = (query_string = "") => {
   const splitOrEmptyArray = (value = "") =>
     value ? value.split(",").map((v) => v.trim()).filter(Boolean) : [];
 
+
+  const parseLocationFromQuery = () => {
+    const entityTypes = splitOrEmptyArray(filters.entity_type);
+    const statesList = splitOrEmptyArray(filters.state);
+    const localList = splitOrEmptyArray(filters.local);
+
+    // Return new location structure
+    return {
+      federal: entityTypes.includes('Federal'),
+      states: statesList,
+      local: localList
+    };
+  };
+
   const finalFilters = {
     status: filters.bid_type || "Open Solicitations",
     keyword: filters.bid_name || "",
-    location: filters.state || "",
+    location: parseLocationFromQuery(),
     publishedDate: {
       from: filters.open_date_after || "",
       to: filters.open_date_before || "",

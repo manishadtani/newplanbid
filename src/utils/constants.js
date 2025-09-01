@@ -10,7 +10,11 @@ export const DASHBOARD_CONSTANTS = {
   DEFAULT_FILTERS: {
     status: "Active",
     keyword: { include: [], exclude: [] },
-    location: [],
+    location: {           // CHANGE FROM: location: []
+      federal: false,
+      states: [],
+      local: []
+    },  
     UNSPSCCode: [],
     NAICSCode: [],
     publishedDate: { after: "", before: "" },

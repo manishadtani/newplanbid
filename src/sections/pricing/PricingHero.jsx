@@ -1,92 +1,187 @@
 // sections/PricingSection.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PricingCard from "../../components/PricingCard";
 import { Link } from "react-router-dom";
 import Heading from "../../components/Heading";
 import HeroHeading from "../../components/HeroHeading";
+import { get } from "jquery";
+import { getPricingPlans } from "../../services/bid.service";
+import '../../index.css';
 
 function PricingHero() {
   const [billingCycle, setBillingCycle] = useState("Annual");
+  const [planDetails, setPlanDetails] = useState(null);
 
   const plans = [
     {
-      title: "Regular",
-      price: "40",
+      title: "Free",
+      price: "0",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "3 Visible Bids Only",
+        "Basic Access"
+      ],
+      icon: "/price-1.png",
+      delay: "200",
+    },
+    {
+      title: "Starter",
+      price: "49",
+      features: [
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "Unlimited Visible Bids",
+        "1 Saved Search",
+        "5 Bookmarks"
       ],
       icon: "/price-1.png",
       delay: "200",
     },
     {
       title: "Essentials",
-      price: "40",
+      price: "349",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "5 Saved Searches",
+        "10 Follows",
+        "20 Bookmarks",
+        "Export 100 bids/month",
+        "RFP Compatibility Summary"
       ],
       icon: "/price-2.png",
       delay: "300",
     },
     {
       title: "A.I. Powerhouse",
-      price: "40",
+      price: "$$$",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "Schools, Universities & Housing Authorities",
+        "Commodities",
+        "10 Saved Searches",
+        "25 Follows",
+        "50 Bookmarks",
+        "Export 500 bids/month",
+        "Full AI Arsenal (6 Tools)",
       ],
       icon: "/price-3.png",
       delay: "400",
+      isComingSoon: true,
     },
   ];
+
   const plansYear = [
     {
-      title: "Regular",
-      price: "400",
+      title: "Free",
+      price: "0",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "3 Visible Bids Only", 
+        "Basic Access"
+      ],
+      icon: "/price-1.png",
+      delay: "200",
+    },
+    {
+      title: "Starter",
+      price: "558",
+      features: [
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "Unlimited Visible Bids",
+        "1 Saved Search",
+        "5 Bookmarks"
       ],
       icon: "/price-1.png",
       delay: "200",
     },
     {
       title: "Essentials",
-      price: "400",
+      price: "3978",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "5 Saved Searches",
+        "10 Follows",
+        "20 Bookmarks",
+        "Export 100 bids/month",
+        "RFP Compatibility Summary"
       ],
       icon: "/price-2.png",
       delay: "300",
     },
     {
       title: "A.I. Powerhouse",
-      price: "400",
+      price: "$$$",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "Schools, Universities & Housing Authorities",
+        "Commodities",
+        "10 Saved Searches",
+        "25 Follows",
+        "50 Bookmarks",
+        "Export 500 bids/month",
+        "Full AI Arsenal (6 Tools)",
       ],
       icon: "/price-3.png",
       delay: "400",
+      isComingSoon: true,
     },
   ];
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const data = await getPricingPlans();
+        console.log(data, "🔥 API Pricing plans fetched");
+        setPlanDetails(data);
+      } catch (error) {
+        console.error("Failed to fetch pricing plans:", error);
+      }
+    }
+    fetchPlans();
+  }, []);
+
+  // Update plans with API data
+  const getUpdatedPlans = (staticPlans) => {
+    if (!planDetails) return staticPlans;
+    
+    return staticPlans.map(plan => {
+      const apiPlan = planDetails.find(api => api.name === plan.title);
+      if (apiPlan) {
+        return {
+          ...plan,
+          price: billingCycle === "Annual" ? 
+            parseFloat(apiPlan.annual_price).toFixed(0) : 
+            parseFloat(apiPlan.monthly_price).toFixed(0),
+          id: apiPlan.id
+        };
+      }
+      return plan;
+    });
+  };
+
   const data = {
     title: "Plans that grow with you",
     para: "Choose the subscription tier that fits your needs and enter your payment details securely to unlock full access.",
-    // btnText: "Get Started",
-    // btnLink: "/apply",
     container: "max-w-4xl mx-auto text-center",
   };
+
   return (
-    <section className=" py-[130px] px-4 bg-blue text-center">
+    <section className="py-[130px] px-4 bg-blue text-center">
       <div className="mb-5" data-aos="fade-up">
         <HeroHeading data={data} />
       </div>
@@ -122,49 +217,55 @@ function PricingHero() {
         </button>
       </div>
 
-      {/* Pricing Cards */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 justify-center max-w-6xl mx-auto">
-        {plans.map((plan, index) => (
-          <PricingCard key={index} {...plan} />
-        ))}
-      </div> */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 justify-center max-w-6xl mx-auto">
+      {/* Pricing Cards - Simplified Animation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 justify-center max-w-7xl mx-auto">
         {billingCycle === "Annual"
-          ? plans.map((plan, index) => (
+          ? getUpdatedPlans(plans).map((plan, index) => (
               <div
-                key={index}
-                className={`transform transition-transform duration-300 ${
-                  index === 1 ? "lg:scale-[1.08] z-10" : "lg:scale-[.95]"
-                }`}
+                key={plan.id || index}
+                className={`
+                  transform transition-all duration-300 ease-out
+                  hover:scale-105
+                  ${index === 1 ? "lg:scale-105" : ""}
+                  opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards]
+                `}
+                style={{
+                  animationDelay: `${index * 0.1}s`,
+                }}
               >
-                <PricingCard {...plan} />
+                <PricingCard {...plan} planDetails={planDetails} />
               </div>
             ))
-          : plansYear.map((plan, index) => (
+          : getUpdatedPlans(plansYear).map((plan, index) => (
               <div
-                key={index}
-                className={`transform transition-transform duration-300 ${
-                  index === 1 ? "lg:scale-[1.08] z-10" : "lg:scale-[.95]"
-                }`}
+                key={plan.id || index}
+                className={`
+                  transform transition-all duration-300 ease-out
+                  hover:scale-105
+                  ${index === 1 ? "lg:scale-105" : ""}
+                  opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards]
+                `}
+                style={{
+                  animationDelay: `${index * 0.1}s`,
+                }}
               >
-                <PricingCard {...plan} />
+                <PricingCard {...plan} planDetails={planDetails} />
               </div>
             ))}
       </div>
 
-      {/* <p
-        className="mt-10 text-[22px]  font-t"
-        data-aos="fade-up"
-        data-aos-delay="300"
-      >
-        Know Everything There Is! <br />
-        <Link
-          to="/pricing"
-          className="text-blue-600 font-medium underline body-t mt-2 block"
-        >
-          View Pricing Page ↗
-        </Link>
-      </p> */}
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }

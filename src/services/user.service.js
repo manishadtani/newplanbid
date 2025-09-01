@@ -86,8 +86,6 @@ export const getAllStates = async () => {
 };
 
 
-
-
 export const getUNSPSCCodes = async ({
   page = 1,
   pageSize = 20,
@@ -114,7 +112,6 @@ export const getUNSPSCCodes = async ({
     throw err;
   }
 };
-
 
 
 export const getSolicitationTypes = async () => {
@@ -156,6 +153,7 @@ export const fetchIndustryCategories = async () => {
   }
 };
 
+
 export const similarBids = async (id) => {
   try {
     const response = await API.get(`/bids/similar/${id}`);
@@ -166,3 +164,22 @@ export const similarBids = async (id) => {
     throw error;
   }
 }
+
+
+export const forgotPasswordRequest = async (email) => {
+  try {
+    const response = await API.post("/auth/forgot-password/request/", { email });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const forgotPasswordVerify = async (payload) => {
+  try {
+    const response = await API.post("/auth/forgot-password/reset/", payload);
+    return response;
+  } catch (error) {
+    throw error;
+  } 
+};

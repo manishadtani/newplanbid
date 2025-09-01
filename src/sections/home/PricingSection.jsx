@@ -9,12 +9,14 @@ function PricingSection() {
 
   const plans = [
     {
-      title: "Regular",
+      title: "Starter",
       price: "40",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "1 Selected State Bids",
+        "1 Saved Searches",
+        "5 Bookmarks"
       ],
       icon: "/price-1.png",
       delay: "200",
@@ -23,9 +25,15 @@ function PricingSection() {
       title: "Essentials",
       price: "40",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "5 Saved Searches",
+        "10 Follows",
+        "20 Bookmarks",
+        "Export 100 bids/month",
+        "RFP Compatibility Summary"
       ],
       icon: "/price-2.png",
       delay: "300",
@@ -34,22 +42,34 @@ function PricingSection() {
       title: "A.I. Powerhouse",
       price: "40",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "Schools, Universities & Housing Authorities",
+        "Commodities",
+        "10 Saved Searches",
+        "25 Follows",
+        "50 Bookmarks",
+        "Export 500 bids/month",
+        "Full AI Arsenal (6 Tools)",
+        
       ],
       icon: "/price-3.png",
       delay: "400",
+      isComingSoon: true, // Add this flag
     },
   ];
   const plansYear = [
     {
-      title: "Regular",
+      title: "Starter",
       price: "400",
-      features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+     features: [
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "1 Selected State Bids",
+        "1 Saved Searches",
+        "5 Bookmarks"
       ],
       icon: "/price-1.png",
       delay: "200",
@@ -57,10 +77,16 @@ function PricingSection() {
     {
       title: "Essentials",
       price: "400",
-      features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+     features: [
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "5 Saved Searches",
+        "10 Follows",
+        "20 Bookmarks",
+        "Export 100 bids/month",
+        "RFP Compatibility Summary"
       ],
       icon: "/price-2.png",
       delay: "300",
@@ -69,12 +95,22 @@ function PricingSection() {
       title: "A.I. Powerhouse",
       price: "400",
       features: [
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
-        "Lorem ipsum dolor sit amet",
+        "Advanced Search (Filters)",
+        "All Federal Bids",
+        "All State Bids",
+        "Cities & Counties",
+        "Schools, Universities & Housing Authorities",
+        "Commodities",
+        "10 Saved Searches",
+        "25 Follows",
+        "50 Bookmarks",
+        "Export 500 bids/month",
+        "Full AI Arsenal (6 Tools)",
+        
       ],
       icon: "/price-3.png",
       delay: "400",
+      isComingSoon: true, // Add this flag
     },
   ];
 

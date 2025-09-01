@@ -10,7 +10,6 @@ import FormImg from "../components/FormImg";
 import ProcessWrapper from "../components/ProcessWrapper";
 import { checkTTLAndClear } from "../utils/ttlCheck";
 import { fetchIndustryCategories } from "../services/user.service";
-import IndustryCategoriesSkeletonLeft from "../components/shimmereffects/IndustryCategoriesSkeletonLeft";
 
 function IndustryCategories() {
   const dispatch = useDispatch();
@@ -59,7 +58,7 @@ function IndustryCategories() {
 
   // Initial setup and data fetching
   useEffect(() => {
-    checkTTLAndClear(navigate);
+    // checkTTLAndClear(navigate);
     loadIndustryCategories();
   }, []);
 
@@ -75,10 +74,11 @@ function IndustryCategories() {
         const industryNames = industries.map(industry => 
           typeof industry === 'string' ? industry : industry.name || industry.title || industry
         );
-        setAllIndustries(industryNames);
+        const sortedIndustries = industryNames.sort((a, b) => a.localeCompare(b));
+        setAllIndustries(sortedIndustries);
       } else {
         // Fallback to static data if API returns empty or invalid data
-        setAllIndustries([
+        const fallbackIndustries = [
           "Agriculture, Forestry, Fishing and Hunting",
           "Mining, Quarrying, Oil and Gas Extraction",
           "Utilities",
@@ -98,14 +98,17 @@ function IndustryCategories() {
           "Administrative and Support Services",
           "Public Administration",
           "Other Services (except Public Administration)",
-        ]);
+        ];
+        
+        // Sort fallback data alphabetically too
+        setAllIndustries(fallbackIndustries.sort((a, b) => a.localeCompare(b)));
       }
     } catch (err) {
       console.error("Failed to load industry categories:", err);
       setError("Failed to load industries. Using default categories.");
       
       // Use fallback static data on error
-      setAllIndustries([
+     const fallbackIndustries = [
         "Agriculture, Forestry, Fishing and Hunting",
         "Mining, Quarrying, Oil and Gas Extraction",
         "Utilities",
@@ -125,7 +128,9 @@ function IndustryCategories() {
         "Administrative and Support Services",
         "Public Administration",
         "Other Services (except Public Administration)",
-      ]);
+      ];
+      
+      setAllIndustries(fallbackIndustries.sort((a, b) => a.localeCompare(b)));
     } finally {
       setIsLoading(false);
     }
@@ -166,12 +171,31 @@ function IndustryCategories() {
 
   // Filter industries based on search term
   const filteredIndustries = useMemo(() => {
-    if (!searchTerm) return allIndustries.slice(0, 6);
-    return allIndustries.filter((industry) =>
-      industry.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, allIndustries]);
-
+    let filtered = allIndustries;
+    
+    // Apply search filter if search term exists
+    if (searchTerm) {
+      filtered = allIndustries.filter((industry) =>
+        industry.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    } else {
+      // If no search term, show only first 6 industries
+      filtered = allIndustries.slice(0, 6);
+    }
+    
+    // Move selected industry to top if it exists in filtered results
+    if (selectedIndustry && filtered.includes(selectedIndustry)) {
+      const selectedIndex = filtered.indexOf(selectedIndustry);
+      const reorderedIndustries = [
+        selectedIndustry, // Selected industry at top
+        ...filtered.slice(0, selectedIndex), // Industries before selected
+        ...filtered.slice(selectedIndex + 1) // Industries after selected
+      ];
+      return reorderedIndustries;
+    }
+    
+    return filtered;
+  }, [searchTerm, allIndustries, selectedIndustry]);
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -213,7 +237,7 @@ function IndustryCategories() {
             <div className="forn-container flex flex-col h-full justify-center items-center">
               <div className="text-white text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p className="text-lg"><IndustryCategoriesSkeletonLeft /></p>
+                <p className="text-lg">Loading..</p>
               </div>
             </div>
           </div>

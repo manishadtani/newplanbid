@@ -8,6 +8,7 @@ import React, {
   useRef
 } from "react";
 import { useNavigate } from "react-router-dom";
+import BlogShareButton from "./BlogShareButton"; 
 
 function formatDate(dateStr) {
   if (!dateStr) return "-";
@@ -39,13 +40,13 @@ const convertToCSV = (rows) => {
     `"${formatDate(bid.open_date)}"`,
     `"${formatDate(bid.closing_date)}"`,
     `"${getCountdown(bid.closing_date)}"`,
-    `"${typeof bid.status === "boolean" ? (bid.status ? "Active" : "Inactive") : bid.status}"`,
+    `"${bid.bid_type || "Unknown"}"`, 
   ]);
 
   return [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
 };
 
-const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { } }, ref) => {
+const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { },  onFeatureRestriction = () => { } }, ref) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -66,10 +67,46 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
     
-  const handleRowClick = (id) => {
-    console.log(id);
+  const handleRowClick = async (id) => {
+  try {
+    console.log("🔥 Fetching bid details for ID:", id);
+    
+    // API call karke bid details fetch karo
+    const bidDetails = await getBids(id); // Single bid fetch
+    
+    console.log("✅ Bid details fetched successfully");
+    // Agar success hai to navigate karo
     navigate(`/summary/${id}`);
-  };
+    
+  } catch (error) {
+    console.error("❌ Error fetching bid details:", error);
+    
+    // Check if it's a restriction error (403 status)
+    if (error.response?.status === 403) {
+      const errorMessage = error.response?.data?.detail || "Upgrade your plan to view this bid summary.";
+      
+      // Popup show karo using parent function
+      if (onFeatureRestriction) {
+        onFeatureRestriction(
+          "Bid Summary Restricted",
+          errorMessage,
+          "Bid Summary Access",
+          true
+        );
+      }
+    } else {
+      // Other errors ke liye generic message
+      if (onFeatureRestriction) {
+        onFeatureRestriction(
+          "Error Loading Bid",
+          "Unable to load bid details. Please try again.",
+          "Bid Access",
+          false
+        );
+      }
+    }
+  }
+};
 
   const exportToCSV = () => {
     const csv = convertToCSV(data);
@@ -108,7 +145,7 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
   return (
     <div className="bid-table rounded-2xl bg-btn text-white my-[50px] shadow-xl overflow-x-auto border-white border-2 border-solid relative max-h-screen overflow-y-auto">
       <table className="min-w-full table-auto text-sm text-center">
-        <thead className="sticky top-0 bg-white/5 backdrop-blur-sm">
+        <thead className="sticky z-10 top-0 bg-white/5 backdrop-blur-sm">
           <tr className="text-white/80 text-xs border-b border-white/20">
 
             <th className="px-4 py-4 font-inter text-lg relative">
@@ -207,20 +244,11 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
                   <td className="px-4 py-4 font-medium font-inter" title={countdownRaw}><span className="text-white">{countdownDisplay}</span></td>
                   <td className="px-4 py-4 font-medium font-inter">{statusLabel}</td>
                   <td className="px-4 py-4 btn-box  text-center">
-                    <button onClick={(e) => {
-                      e.stopPropagation();
-                      if (navigator.share) {
-                        navigator.share({
-                          title: `Bid: ${bid.bid_name}`,
-                          text: `Check out this bid from ${bid.jurisdiction}`,
-                          url: `${window.location.origin}/summary/${bid.id}`,
-                        }).catch((err) => console.error("Share failed:", err));
-                      } else {
-                        alert("Sharing is not supported on this device.");
-                      }
-                    }}>
-                      <i className="fas fa-share-alt"></i>
-                    </button>
+                    <BlogShareButton
+                      url={`${window.location.origin}/summary/${bid.id}`}
+                      onShare={() => console.log(`Shared bid: ${bid.bid_name}`)}
+                    />
+
                   </td>
                   <td className="px-4 py-4 text-center">
                     <button>

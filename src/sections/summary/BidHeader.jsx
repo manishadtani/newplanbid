@@ -2,11 +2,24 @@ import React, { useEffect, useState } from "react";
 
 const BidHeader = ({
   title = "No Title",
-  location = "Unknown Location",
+  org,
+  location,
   postedDate = "-",
   deadline = "2025-07-31T23:59:59Z",
-  sourceLink = "#",
+  sourceLink,
+  onBookmark,
+  isBookmarking,
 }) => {
+
+  // console.log(title, "Title from props");
+  // console.log(org, "Organization from props");
+  // console.log(location, "Location from props");
+  // console.log(postedDate, "Posted Date from props");
+  // console.log(deadline, "Deadline from props");
+  // console.log(sourceLink, "Source Link from props");
+  console.log(onBookmark, "onBookmark from props");
+  console.log(isBookmarking, "isBookmarking from props");
+
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,
@@ -102,6 +115,34 @@ const BidHeader = ({
                   </div>
                 </div>
               )}
+
+
+              {/* Save Button */}
+              {onBookmark ? (
+                <button
+                  onClick={onBookmark}
+                  disabled={isBookmarking}
+                  className={`flex items-center flex-col text-center gap-2 transition-opacity ${isBookmarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'
+                    }`}
+                >
+                  <i className={`fas text-xl fa-bookmark ${isBookmarking ? 'fa-spin' : ''}`}></i>
+                  <div>
+                    <p className="font-inter text-xl text-[#DBDBDB]">
+                      {isBookmarking ? 'Booking...' : 'Bookmark'}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <div className="flex items-center flex-col text-center gap-2 opacity-50 cursor-not-allowed">
+                  <i className="fa-solid text-xl fa-bookmark"></i>
+                  <div>
+                    <p className="font-inter text-xl text-[#DBDBDB]">Bookmark</p>
+                  </div>
+                </div>
+              )}
+
+
+
             </div>
           </div>
 

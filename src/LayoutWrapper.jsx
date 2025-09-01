@@ -8,6 +8,7 @@ const LayoutWrapper = ({ children }) => {
 
   const hiddenRoutes = [
     "/login",
+    "/forgot-password",
     "/signup",
     "/register",
     "/company-build",

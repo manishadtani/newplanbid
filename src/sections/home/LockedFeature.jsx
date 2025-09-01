@@ -73,7 +73,7 @@ function LockedFeature() {
                 <div className="locked-img">
                   <img src={item.img} alt="" />
                 </div>
-                <div className="locked-text h-full p-5">
+                <div className="locked-text h-full p-5 hidden">
                   <div className="locked-title font-h font-semibold text-black mb-3 h3">
                     {item.title}
                   </div>

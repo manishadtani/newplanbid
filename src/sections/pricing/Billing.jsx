@@ -3,36 +3,82 @@ import Heading from "../../components/Heading";
 
 function Billing() {
   // data/plans.js
-  const plans = ["Free", "Basic", "Standard", "Premium"];
+  const plans = ["Free", "Starter", "Essentials", "AI Powerhouse"];
 
   const sections = [
     {
-      title: "Essentials",
+      title: "Features",
       features: [
+
         {
-          name: "Lorem ipsum dolor",
-          values: ["Limited", "Limited", "Flexible", "Unlimited"],
+          name: "Bid Summary",
+          values: ["-", "✔️", "✔️", "✔️"],
         },
         {
-          name: "Lorem ipsum dolor",
-          values: ["-", "Limited", "Flexible", "Unlimited"],
+          name: "Advanced Search",
+          values: ["-", "✔️", "✔️", "✔️"],
+        },
+        
+        {
+          name: "Federal Bids",
+          values: ["-", "✔️", "✔️", "✔️"],
         },
         {
-          name: "Lorem ipsum dolor sit amet",
-          values: ["Limited", "✔️", "✔️", "✔️"],
+          name: "State Bids",
+          values: ["-", "Up to 1", "✔️", "✔️"],
         },
+         {
+          name: "Cities & Counties",
+          values: ["-", "-", "Coming Soon", "Coming Soon"],
+        },
+         {
+          name: "Saved Searches",
+          values: ["-", "Up to 1", "Up to 5", "Up to 10"],
+        },
+         {
+          name: "Follows",
+          values: ["-", "-", "Up to 10", "Up to 25"],
+        },
+         {
+          name: "Bookmarks",
+          values: ["-", "Up to 5", "Up to 20", "Up to 50"],
+        },
+         {
+          name: "Export bids/month",
+          values: ["-", "-", "Up to 100", "Up to 500"],
+        },
+        // {
+        //   name: "Full AI Arsenal (RFP Compatibility Summary, Proposal Compliance Checker, Competitive Pricing Generator, Task Checklist Generator, Questionnaire Generator, Capability Statement Generator)",
+        //   values: ["-", "-", "Coming Soon", "Coming Soon"],
+        // },
       ],
     },
     {
-      title: "Features",
+      title: "Full Stack A.I. Arsenal",
       features: [
         {
-          name: "Lorem ipsum dolor",
-          values: ["-", "-", "Flexible", "Unlimited"],
+          name: "RFP Compatibility Summary",
+          values: ["-", "-", "Coming Soon", "Coming Soon"],
         },
         {
-          name: "Lorem ipsum dolor sit",
-          values: ["Limited", "Limited", "Flexible", "Unlimited"],
+          name: "Proposal Compliance Checker",
+          values: ["-", "-", "-", "Coming Soon"],
+        },
+        {
+          name: "Competitive Pricing Generator",
+          values: ["-", "-", "-", "Coming Soon"],
+        },
+        {
+          name: "Task Checklist Generator",
+          values: ["-", "-", "-", "Coming Soon"],
+        },
+        {
+          name: "Questionnaire Generator",
+          values: ["-", "-", "-", "Coming Soon"],
+        },
+        {
+          name: "Capability Statement Generator",
+          values: ["-", "-", "-", "Coming Soon"],
         },
       ],
     },
@@ -68,10 +114,10 @@ function Billing() {
             <tbody>
               {sections.map((section, sIdx) => (
                 <React.Fragment key={sIdx} className="">
-                  <tr className="">
+                  <tr className="pt-4">
                     <td
                       colSpan={plans.length + 1}
-                      className="text-left pt-6 pb-2 font-medium text-xl font-inter xl:text-[30px]"
+                      className="text-left pt-16 pb-2 font-medium text-xl font-inter xl:text-[30px]"
                     >
                       {section.title}
                     </td>

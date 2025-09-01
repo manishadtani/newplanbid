@@ -11,7 +11,7 @@ function KeyValuePro() {
     <div className="key-value-pro bg-blue">
       <div className="container-section">
         <HeroHeading data={data}/>
-        <img src="key-value-img.png" className="w-full mt-10" alt="" data-aos="fade-up" data-aos-delay="300"/>
+        <img src="Mapchart.png" className="w-full mt-10" alt="" data-aos="fade-up" data-aos-delay="300"/>
       </div>
     </div>
   );

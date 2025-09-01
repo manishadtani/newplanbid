@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEllipsisV,
@@ -7,106 +7,176 @@ import {
   faEdit,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { scrapperBids } from "../../services/admin.service";
 
 library.add(faEllipsisV, faCopy, faTrash, faEdit);
 
-const data = [
-  {
-    id: "ID-37",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/123",
-    bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Automated",
-  },
-  {
-    id: "ID-38",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/456",
-    bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Manual",
-  },
-  {
-    id: "ID-39",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/789",
-    bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Automated",
-  },
-  {
-    id: "ID-40",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/101",
-    bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Manual",
-  },
-  {
-    id: "ID-41",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/102",
-    bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Automated",
-  },
-  {
-    id: "ID-42",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/103",
-    bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Manual",
-  },
-  {
-    id: "ID-43",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/104",
-    bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Automated",
-  },
-  {
-    id: "ID-44",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/105",
-    bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Manual",
-  },
-  {
-    id: "ID-45",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/106",
-    bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Automated",
-  },
-  {
-    id: "ID-46",
-    url: "https://www.bidnetdirect.com/private/sup...",
-    fullUrl: "https://www.bidnetdirect.com/private/support/bid/107",
-    bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
-    type: "Federal",
-    time: "10:56:45",
-    override: "Manual",
-  },
-];
+// const data = [
+//   {
+//     id: "ID-37",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/123",
+//     bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Automated",
+//   },
+//   {
+//     id: "ID-38",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/456",
+//     bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Manual",
+//   },
+//   {
+//     id: "ID-39",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/789",
+//     bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Automated",
+//   },
+//   {
+//     id: "ID-40",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/101",
+//     bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Manual",
+//   },
+//   {
+//     id: "ID-41",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/102",
+//     bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Automated",
+//   },
+//   {
+//     id: "ID-42",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/103",
+//     bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Manual",
+//   },
+//   {
+//     id: "ID-43",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/104",
+//     bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Automated",
+//   },
+//   {
+//     id: "ID-44",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/105",
+//     bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Manual",
+//   },
+//   {
+//     id: "ID-45",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/106",
+//     bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Automated",
+//   },
+//   {
+//     id: "ID-46",
+//     url: "https://www.bidnetdirect.com/private/sup...",
+//     fullUrl: "https://www.bidnetdirect.com/private/support/bid/107",
+//     bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+//     type: "Federal",
+//     time: "10:56:45",
+//     override: "Manual",
+//   },
+// ];
 
 
 const URLBar = () => {
   const [actionOpenRow, setActionOpenRow] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
+   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+
+   useEffect(() => {
+    const fetchScrapperBids = async () => {
+      try {
+        setLoading(true);
+        const apiData = await scrapperBids();
+        console.log("Scrapper Bids API Response:", apiData);
+        
+        // Handle different API response structures
+        const bidsArray = Array.isArray(apiData) ? apiData : (apiData.results || apiData.data || []);
+        setData(bidsArray);
+        setError('');
+      } catch (err) {
+        setError("Failed to fetch scrapper bids data");
+        console.error("Error fetching scrapper bids:", err);
+        
+        // Set mock data for demonstration if API fails
+        setData([
+          {
+            id: "ID-37",
+            url: "https://www.bidnetdirect.com/private/sup...",
+            fullUrl: "https://www.bidnetdirect.com/private/support/bid/123",
+            bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+            name: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+            type: "Federal",
+            entity_type_name: "Federal",
+            time: "10:56:45",
+            last_run: "10:56:45",
+            override: "Automated",
+            is_active: true,
+          },
+          {
+            id: "ID-38",
+            url: "https://www.bidnetdirect.com/private/sup...",
+            fullUrl: "https://www.bidnetdirect.com/private/support/bid/456",
+            bidName: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+            name: "DOCUMENT COPYING & DISTRIBUTION SERVICES",
+            type: "Federal",
+            entity_type_name: "Federal",
+            time: "10:56:45",
+            last_run: "10:56:45",
+            override: "Manual",
+            is_active: false,
+          },
+          {
+            id: "ID-39",
+            url: "https://www.bidnetdirect.com/private/sup...",
+            fullUrl: "https://www.bidnetdirect.com/private/support/bid/789",
+            bidName: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+            name: "ADDRESSING, COPYING, MIMEOGRAPH, AND SPIRIT...",
+            type: "Federal",
+            entity_type_name: "Federal",
+            time: "10:56:45",
+            last_run: "10:56:45",
+            override: "Automated",
+            is_active: true,
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScrapperBids();
+  }, []);
 
   const toggleAction = (index) => {
     setActionOpenRow((prev) => (prev === index ? null : index));
@@ -137,11 +207,12 @@ const URLBar = () => {
         </thead>
         <tbody>
           {data.map((row, i) => (
-            <tr key={i} className="odd:bg-white even:bg-gray-50 relative">
-              <td className="px-4 py-3">{row.id}</td>
+            console.log(row),
+            <tr key={i} className="odd:bg-white text-center even:bg-gray-50 relative">
+              <td className="px-4 py-3">{row.id || "-"}</td>
 
               <td className="px-4 py-3 flex items-center gap-2">
-                <span className="truncate max-w-[200px]">{row.url}</span>
+                <span className="truncate max-w-[200px]">{row.url || "-"}</span>
                 <button
                   onClick={() => copyToClipboard(row.fullUrl, i)}
                   className="text-gray-500 hover:text-black"
@@ -153,9 +224,9 @@ const URLBar = () => {
                 )}
               </td>
 
-              <td className="px-4 py-3 font-inter">{row.bidName}</td>
-              <td className="px-4 py-3 font-inter">{row.type}</td>
-              <td className="px-4 py-3 font-inter">{row.time}</td>
+              <td className="px-4 py-3 font-inter ">{row.name || "-"}</td>
+              <td className="px-4 py-3 font-inter ">{row.entity_type_name || "-"}</td>
+              <td className="px-4 py-3 font-inter ">{row.last_run  || "-"}</td>
               <td className="px-4 py-3 font-inter">
                 <select
                   defaultValue={row.override}

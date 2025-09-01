@@ -42,7 +42,11 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
       include: [],
       exclude: [],
     },
-    location: [],
+    location: {
+      federal: false,
+      states: [],
+      local: []
+    },
     NAICSCode: [],
     UNSPSCCode: [],
     solicitationType: [],
@@ -78,7 +82,11 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
         include: [],
         exclude: [],
       },
-      location: [],
+      location: {
+      federal: false,
+      states: [],
+      local: []
+    },
       NAICSCode: [],
       UNSPSCCode: [],
       solicitationType: [],
@@ -107,10 +115,65 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
       decodedFilters.status = searchParams.get('bid_type');
     }
 
-    // Decode state to location array
-    if (searchParams.get('state')) {
-      decodedFilters.location = searchParams.get('state').split(',');
+    if (searchParams.get('ordering')) {
+      decodedFilters.ordering = searchParams.get('ordering');
     }
+
+
+
+
+
+
+    
+
+     const entityTypeParam = searchParams.get('entity_type');
+    if (entityTypeParam) {
+      const entityTypes = entityTypeParam.split(',');
+      
+      // Check for Federal
+      if (entityTypes.includes('Federal')) {
+        decodedFilters.location.federal = true;
+      }
+      
+      // Check for State
+      if (entityTypes.includes('State') && searchParams.get('state')) {
+        decodedFilters.location.states = searchParams.get('state').split(',');
+      }
+      
+      // Check for Local
+      if (entityTypes.includes('Local') && searchParams.get('local')) {
+        decodedFilters.location.local = searchParams.get('local').split(',');
+      }
+    } else {
+      // 🔥 FALLBACK: Handle old multiple entity_type parameters (backward compatibility)
+      const entityTypes = searchParams.getAll('entity_type');
+      
+      // Check for Federal
+      if (entityTypes.includes('Federal')) {
+        decodedFilters.location.federal = true;
+      }
+      
+      // Check for State
+      if (entityTypes.includes('State') && searchParams.get('state')) {
+        decodedFilters.location.states = searchParams.get('state').split(',');
+      }
+      
+      // Check for Local
+      if (entityTypes.includes('Local') && searchParams.get('local')) {
+        decodedFilters.location.local = searchParams.get('local').split(',');
+      }
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     // Decode solicitation to solicitationType array
     if (searchParams.get('solicitation')) {
@@ -222,6 +285,8 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
     // Check if there are any filter parameters in the URL (including date parameters)
     const hasFilterParams = searchParams.get('bid_type') ||
       searchParams.get('state') ||
+       searchParams.get('local') ||
+      searchParams.getAll('entity_type').length > 0 ||
       searchParams.get('solicitation') ||
       searchParams.get('include') ||
       searchParams.get('exclude') ||
@@ -276,7 +341,11 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
         include: [],
         exclude: [],
       },
-      location: [],
+      location: {
+        federal: false,
+        states: [],
+        local: []
+      },
       NAICSCode: [],
       UNSPSCCode: [],
       solicitationType: [],
@@ -313,14 +382,30 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
     params.append('page', '1');
     params.append('pageSize', '500');
 
+    params.append('ordering', 'closing_date');
+
     // Convert status (Active/Inactive)
     if (filters.status) {
       params.append('bid_type', filters.status);
     }
 
     // Convert location array to comma-separated state values
-    if (filters.location && filters.location.length > 0) {
-      params.append('state', filters.location.join(','));
+    // if (filters.location && filters.location.length > 0) {
+    //   params.append('state', filters.location.join(','));
+    // }
+
+     if (filters.location?.federal) {
+      params.append('entity_type', 'Federal');
+    }
+    
+    if (filters.location?.states && filters.location.states.length > 0) {
+      params.append('entity_type', 'State');
+      params.append('state', filters.location.states.join(','));
+    }
+    
+    if (filters.location?.local && filters.location.local.length > 0) {
+      params.append('entity_type', 'Local');
+      params.append('local', filters.location.local.join(','));
     }
 
     // Convert solicitationType array to comma-separated solicitation values
@@ -374,9 +459,14 @@ const FilterPanel = ({ onClose, filters: propFilters, setFilters: setPropFilters
     try {
       console.log("🔥 Search clicked with filters:", filters);
 
+      const filtersWithOrdering = {
+        ...filters,
+        ordering: filters.ordering || "closing_date"
+      };
+
       // 🔥 Call the onApply callback from Dashboard
       if (onApply) {
-        onApply(filters); // Pass current filters to Dashboard
+        onApply(filtersWithOrdering); // Pass current filters to Dashboard
       }
 
       // Close the filter panel

@@ -47,7 +47,7 @@ useEffect(() => {
       setFromDate("");
       setToDate("");
     } else if (type === "timeline") {
-      setWithinDays("");
+      setWithinDays("7");
       setFromDate(from || "");
       setToDate(to || "");
     }
@@ -67,7 +67,7 @@ useEffect(() => {
     if (loginDate && afterDate === loginDate) {
       console.log("🔥 Detected lastLogin pattern, setting type to lastLogin");
       setSelectedType("lastLogin");
-      setWithinDays("");
+      setWithinDays("7");
       setFromDate("");
       setToDate("");
       return;
@@ -224,7 +224,14 @@ useEffect(() => {
 
   const handleWithinChange = (days) => {
     setWithinDays(days);
-    if (selectedType === "within") {
+    
+    // If empty value is selected (default option), clear the filter
+    if (!days || days === "") {
+      // Clear the radio button selection and update filters
+      setSelectedType("");
+      updateFilters("", "7", "", "");
+    } else if (selectedType === "within") {
+      // Update filters with the selected days
       updateFilters("within", days);
     }
   };

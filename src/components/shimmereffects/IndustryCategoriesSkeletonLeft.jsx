@@ -8,15 +8,15 @@ const IndustryCategoriesSkeletonLeft = () => {
         {/* Header skeleton */}
         <div>
           <div className="mb-6">
-            <div className="h-6 w-32 bg-white/30 rounded mb-2"></div>
-            <div className="h-4 w-20 bg-white/20 rounded"></div>
+            <div className="h-6 w-32 bg-#424DAA rounded mb-2"></div>
+            <div className="h-4 w-20 bg-#424DAA rounded"></div>
           </div>
 
           {/* Hero Heading Skeleton */}
           <div className="space-y-3">
-            {/* <div className="h-8 w-3/4 bg-white/30 rounded"></div>
-            <div className="h-4 w-5/6 bg-white/20 rounded"></div> */}
-            {/* <div className="h-4 w-2/3 bg-white/20 rounded"></div> */}
+            {/* <div className="h-8 w-3/4 bg-#424DAA rounded"></div>
+            <div className="h-4 w-5/6 bg-#424DAA rounded"></div> */}
+            {/* <div className="h-4 w-2/3 bg-#424DAA rounded"></div> */}
           </div>
         </div>
 

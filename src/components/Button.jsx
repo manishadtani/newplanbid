@@ -5,6 +5,7 @@ function Button({ text, link, btnBg, arrowBg }) {
   return (
     <Link
       to={link}
+      target="_blank"
       className={`btn flex justify-between items-center rounded-full p-1  ${btnBg}`}
     >
       <div className={`btn-arrow rounded-full text-center ${arrowBg}`}>

@@ -17,11 +17,9 @@ const SubmissionModal = ({ onBack, onContinue, onClose }) => {
 
         {/* Inner Box */}
         <div className="border border-white/30 rounded-lg p-4 text-center mb-6">
-          <h3 className="text-lg font-inter font-semibold mb-2">Lorem ipsum dolor sit amet?</h3>
+          <h3 className="text-lg font-inter font-semibold mb-2">YOU ARE ABOUT TO SUBMIT YOUR RESPONSE</h3>
           <p className="text-sm font-inter text-white/90 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. In accumsan eros non
-            fringilla faucibus. Sed scelerisque ultrices dui, vitae bibendum lorem bibendum ac.
-            Duis eu nisi non orci fermentum commodo.
+            If you want to fill this page, kindly fill the previous page first. These pages help our A.I. better understand your profile in order to provide <br></br> more accurate responses. <br></br><br></br>If you still wish to skip, you will be able to complete <br></br>these steps in your User Profile setings.
           </p>
         </div>
 

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux"; // <-- Add this
 import FormHeader from "../components/FormHeader";
 import HeroHeading from "../components/HeroHeading";
 import FormField from "../components/FormField";
@@ -60,6 +59,8 @@ function CompanyBuild() {
     targetContractSize: false,
     upload: false,
   });
+
+
   const [errors, setErrors] = useState({
     companyName: "",
     companyFienOrSsn: "",
@@ -104,6 +105,7 @@ function CompanyBuild() {
 
 
   // Validation rules
+  // Updated validateField function ka part
   const validateField = (name, value) => {
     let msg = "";
     let type = "error";
@@ -123,13 +125,12 @@ function CompanyBuild() {
           : "Enter a valid url";
         type = urlRegex.test(value) ? "success" : "error";
       } else if (name === "companyFienOrSsn") {
-        // New validation for FIEN/SSN
-        // Allow digits and hyphens, but only digits count for length
-        if (!/^[\d-]*$/.test(value)) {
-          msg = "Please enter valid fien or ssn number";
+        // Updated validation for FIEN/SSN - only digits allowed, no special characters
+        if (!/^\d+$/.test(value)) {
+          msg = "Only numbers are allowed, no special characters";
           type = "error";
-        } else if (value.replace(/-/g, "").length !== 9) {
-          msg = "Fien or ssn number must be 9 digits long";
+        } else if (value.length !== 9) {
+          msg = "FIEN or SSN number must be exactly 9 digits";
           type = "error";
         } else {
           msg = "This field is valid";
@@ -213,11 +214,12 @@ function CompanyBuild() {
             newErrors[key] = "Website is valid";
           }
         } else if (key === "companyFienOrSsn") {
-          if (!/^[\d-]*$/.test(fields[key])) {
-            newErrors[key] = "Please enter valid fien or ssn number";
+          // Updated validation - only digits, no special characters
+          if (!/^\d+$/.test(fields[key])) {
+            newErrors[key] = "Only numbers are allowed, no special characters";
             valid = false;
-          } else if (fields[key].replace(/-/g, "").length !== 9) {
-            newErrors[key] = "Fien or ssn number must be 9 digits long";
+          } else if (fields[key].length !== 9) {
+            newErrors[key] = "FIEN or SSN number must be exactly 9 digits";
             valid = false;
           } else {
             newErrors[key] = "This field is valid";
@@ -238,6 +240,9 @@ function CompanyBuild() {
 
     setTouched(newTouched);
     setErrors(newErrors);
+
+    // Rest of the function remains same...
+
 
     if (valid) {
       // Use fields.upload for the file
@@ -297,10 +302,13 @@ function CompanyBuild() {
     }
   };
 
+  
+
+
 
   const data = {
-    title: "Lorem ipsum dolor sit ",
-    para: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
+    title: "Company Snapshot",
+    para: "This take under a minute-promise! ",
     btnText: false,
     btnLink: false,
     container: "max-w-4xl mx-auto text-left",
@@ -341,7 +349,7 @@ function CompanyBuild() {
           >
             <div className="">
               <FormField
-                label="Company name"
+                label="Company name *"
                 type="text"
                 name="companyName"
                 placeholder="e.g. BidInsight "
@@ -353,7 +361,7 @@ function CompanyBuild() {
                 messageType={getMessageType("companyName")}
               />
               <FormField
-                label="Company FIEN or SSN"
+                label="Company FIEN or SSN *"
                 type="text"
                 name="companyFienOrSsn"
                 placeholder="e.g. XXXXXXXXX"
@@ -365,7 +373,7 @@ function CompanyBuild() {
                 messageType={getMessageType("companyFienOrSsn")}
               />
               <FormField
-                label="Company website"
+                label="Company website *"
                 type="text"
                 name="companyWebsite"
                 placeholder="e.g. www.mark-jospeh.com"
@@ -380,7 +388,7 @@ function CompanyBuild() {
 
               <div className="flex w-[100%] md:w-[90%] gap-4">
                 <FormSelect
-                  label="Year in business"
+                  label="Year in business *"
                   name="yearInBusiness"
                   value={fields.yearInBusiness}
                   onChange={handleChange}
@@ -396,7 +404,7 @@ function CompanyBuild() {
                   messageType={getMessageType("yearInBusiness")}
                 />
                 <FormSelect
-                  label="No. of employees"
+                  label="No. of employees *"
                   name="numberOfEmployees"
                   value={fields.numberOfEmployees}
                   onChange={handleChange}
@@ -417,19 +425,19 @@ function CompanyBuild() {
 
               <div className="flex w-[100%] md:w-[90%] gap-4">
                 <FormSelect
-                  label="State"
+                  label="State *"
                   name="state"
                   value={fields.state}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   options={stateOptions}
                   delay={100}
-                   message={errors.state} // ✅ CHANGED
+                  message={errors.state} // ✅ CHANGED
                   messageType={getMessageType("state")}
                   touched={touched.state}
                 />
                 <FormSelect
-                  label="Target contract size"
+                  label="Target contract size *"
                   name="targetContractSize"
                   value={fields.targetContractSize}
                   onChange={handleChange}
@@ -440,7 +448,7 @@ function CompanyBuild() {
                     { value: "above-500000", label: "Above $500,000" },
                   ]}
                   delay={100}
-                 message={errors.targetContractSize} // ✅ CHANGED
+                  message={errors.targetContractSize} // ✅ CHANGED
                   messageType={getMessageType("targetContractSize")}
                   touched={touched.targetContractSize}
                 />
@@ -494,12 +502,7 @@ function CompanyBuild() {
                 your company's profile, as providing comprehensive information
                 is crucial to achieving optimal AI results
               </div>
-              {emailError && (
-                <div className="text-red-400 font-t mt-2 text-base flex items-center gap-2">
-                  <i className="fa-solid fa-xmark text-red-400"></i>
-                  {emailError} <a href="/login" className="underline text-red-400 ml-2">Login</a>
-                </div>
-              )}
+
             </div>
 
             <div className="">

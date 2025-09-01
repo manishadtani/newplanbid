@@ -1,10 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-function BgCover({ children, title, description }) {
+function BgCover({ children, title, description, onClick }) {
   
   return (
-    <div className="tooltip-wrapper relative">
+    <div className="tooltip-wrapper relative" onClick={onClick}>
       <div className="bg-btn border-1 border-solid border-white p-4 px-5 rounded-[30px] font-inter">
         {children}
       </div>

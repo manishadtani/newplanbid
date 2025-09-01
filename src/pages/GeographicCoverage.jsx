@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import {saveGeographicCoverage, saveIndustryCategory} from "../redux/reducer/onboardingSlice";
+import { saveGeographicCoverage, saveIndustryCategory } from "../redux/reducer/onboardingSlice";
 import FormHeader from "../components/FormHeader";
 import HeroHeading from "../components/HeroHeading";
 import FormFooter from "../components/FormFooter";
@@ -52,9 +52,22 @@ function GeographicCoverage() {
 
   const [skipClicked, setSkipClicked] = useState(false); // 🆕 Skip flag
 
-   useEffect(() => {
-      checkTTLAndClear(navigate);
-    }, []);
+  useEffect(() => {
+    checkTTLAndClear(navigate);
+  }, []);
+
+  useEffect(() => {
+    // current entry lock kar do
+    window.history.pushState(null, "", window.location.href);
+
+    const handleBack = () => {
+      window.history.go(1); // back dabane par same page par rakho
+    };
+
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, []);
+
 
   // 🔁 Load sessionStorage on first mount
   useEffect(() => {
@@ -85,25 +98,25 @@ function GeographicCoverage() {
   }, [selectedRegions, nationwideSelected, selectedIndustries, skipClicked]);
 
   // 🌐 Fetch states
-useEffect(() => {
-  async function fetchStates() {
-    try {
-      const data = await getAllStates(); // ✅ use the service function
-      if (Array.isArray(data)) {
-        setStateOptions(
-          data.map((item) => ({
-            value: item.id,
-            label: item.name,
-          }))
-        );
+  useEffect(() => {
+    async function fetchStates() {
+      try {
+        const data = await getAllStates(); // ✅ use the service function
+        if (Array.isArray(data)) {
+          setStateOptions(
+            data.map((item) => ({
+              value: item.id,
+              label: item.name,
+            }))
+          );
+        }
+      } catch (err) {
+        setStateOptions([{ value: "", label: "Error loading states" }]);
       }
-    } catch (err) {
-      setStateOptions([{ value: "", label: "Error loading states" }]);
     }
-  }
 
-  fetchStates();
-}, []);
+    fetchStates();
+  }, []);
 
   const handleNationwide = () => {
     setNationwideSelected(true);
@@ -159,8 +172,8 @@ useEffect(() => {
     const geoData = nationwideSelected
       ? { region: "Nationwide", states: [] }
       : selectedRegions.length > 0
-      ? { region: "Region", states: selectedRegions }
-      : { region: "", states: [] };
+        ? { region: "Region", states: selectedRegions }
+        : { region: "", states: [] };
 
     const industryData = selectedIndustries;
 
@@ -172,15 +185,15 @@ useEffect(() => {
 
   // 🆕 Handle Skip
   const handleSkip = () => {
-  setSkipClicked(true);
+    setSkipClicked(true);
 
-  // Remove geographic from sessionStorage
-  const prev = JSON.parse(sessionStorage.getItem("onboardingForm")) || {};
-  delete prev.geographic;
-  sessionStorage.setItem("onboardingForm", JSON.stringify(prev));
+    // Remove geographic from sessionStorage
+    const prev = JSON.parse(sessionStorage.getItem("onboardingForm")) || {};
+    delete prev.geographic;
+    sessionStorage.setItem("onboardingForm", JSON.stringify(prev));
 
-  navigate("/industry-categories");
-};
+    navigate("/industry-categories");
+  };
 
 
   const formFooter = {
@@ -222,7 +235,7 @@ useEffect(() => {
               />
 
               <div className="form-label font-t my-5">Select region</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 {regions.map((reg, i) => (
                   <FormRadio
                     key={i}
@@ -239,7 +252,7 @@ useEffect(() => {
               </div>
 
               <FormMultiSelect
-                label="Or Select State"
+                label="Select State"
                 name="industries"
                 placeholder="Choose State (Max 10)"
                 options={stateOptions}
