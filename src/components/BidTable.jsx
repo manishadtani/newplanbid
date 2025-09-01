@@ -45,7 +45,7 @@ const convertToCSV = (rows) => {
   return [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
 };
 
-const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { }}, ref) => {
+const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { },onFollowBid = () => { }, followedBids = new Set(), followLoading = new Set()}, ref) => {
   // onFeatureRestriction = () => { } 
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -113,6 +113,11 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
   const handleRowClick = (id) => {
     console.log(id);
     navigate(`/summary/${id}`);
+  };
+
+   const handleFollowClick = (e, bidId) => {
+    e.stopPropagation(); // Prevent row click when follow button is clicked
+    onFollowBid(bidId);
   };
 
   const exportToCSV = () => {
@@ -242,6 +247,9 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
                 }
               }
 
+               const isFollowed = followedBids.has(bid.id);
+              const isLoading = followLoading.has(bid.id);
+
               return (
                 <tr key={bid.id} className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer" onClick={() => handleRowClick(bid.id)}>
                   <td className="px-4 py-4 font-semibold font-inter">{truncate(bid.entity_type)}</td>
@@ -258,8 +266,29 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
 
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <button>
-                      <i className={`fas ${bid.followed ? "fa-minus-circle" : "fa-plus-circle"}`}></i>
+                    <button
+                      onClick={(e) => handleFollowClick(e, bid.id)}
+                      disabled={isLoading}
+                      className={`w-8 h-8 rounded-full   flex items-center justify-center transition-all duration-200 ${
+                        isLoading 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : 'hover:scale-110 cursor-pointer'
+                      }`}
+                      title={isFollowed ? "Unfollow this bid" : "Follow this bid"}
+                    >
+                      {isLoading ? (
+                        // Loading spinner
+                        <div className="w-4 h-4 border-2 border-white  border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        // Follow/Unfollow icon
+                        <i 
+                          className={`fas text-lg transition-colors ${
+                            isFollowed 
+                              ? "fa-minus-circle text-white-400 hover:text-white-300" 
+                              : "fa-plus-circle text-white-400 hover:text-white-300"
+                          }`}
+                        ></i>
+                      )}
                     </button>
                   </td>
                 </tr>

@@ -388,7 +388,7 @@ const FilterPanelSaveSearch = ({ onClose, selectedSearch, setSelectedSearch, han
                   <span>{tab}</span>
                   <span>{activeTab === tab ? "−" : "+"}</span>
                 </div>
-                <img src="line.png" className="mt-3" alt="divider" />
+                <img src="/line.png" className="mt-3" alt="divider" />
               </li>
             ))}
           </ul>

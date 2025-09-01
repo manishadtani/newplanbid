@@ -230,3 +230,27 @@ export const exportBidsToCSV = async (bidIds) => {
     throw error;
   }
 };
+
+
+
+export const followBids = async (id) => {
+  const token = localStorage.getItem("access_token");
+  if (!token) {
+    throw new Error("No access token found");
+  }
+  try {
+    const res = await API.post("/bids/follow/", 
+      { bid_id: id },
+      {
+        headers: {  
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    console.log("Followed bid:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error("Error following bid:", err);
+    throw err;
+  }
+}

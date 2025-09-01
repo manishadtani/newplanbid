@@ -1,9 +1,10 @@
 import axios from "axios";
 
-const devBaseURL = "http://82.112.234.104:8001/api/";
-const prodBaseURL = "https://apibid.collegedwarka.com/api";
+const devBaseURL = import.meta.env.VITE_BASE_URL;
+const prodBaseURL = import.meta.env.VITE_PROD_URL;
 
-const baseURL = process.env.NODE_ENV === "production" ? prodBaseURL : devBaseURL;
+const baseURL = import.meta.env.PROD ? prodBaseURL : devBaseURL;
+
 
 const token = localStorage.getItem("access_token");
 const instance = axios.create({
