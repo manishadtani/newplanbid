@@ -153,13 +153,13 @@ function Verification() {
           }));
 
           setTimeout(() => {
-            navigate("/plan");
+            navigate("/pricing");
           }, 1000);
         } else if (data.success || data.message?.includes("success")) {
           setOtpMessage("Verification successful!");
           setOtpMessageType("success");
           setTimeout(() => {
-            navigate("/plan");
+            navigate("/pricing");
           }, 1000);
         } else {
           setOtpMessage("Verification successful but no access token received.");

@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Crown, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const FeatureRestrictionPopup = ({ 
   isOpen, 
@@ -10,6 +11,8 @@ const FeatureRestrictionPopup = ({
   featureName = "Premium Feature",
   showUpgradeButton = true 
 }) => {
+  const navigate = useNavigate();
+
   if (!isOpen) return null;
 
   return (
@@ -17,7 +20,7 @@ const FeatureRestrictionPopup = ({
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 relative">
+        <div className="px-6 py-4 relative bg-gradient-to-r from-[#192070] via-[#2736C0] to-[#424EC5]">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
@@ -40,8 +43,8 @@ const FeatureRestrictionPopup = ({
         <div className="p-6">
           {/* Main Message */}
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Crown className="text-orange-600" size={24} />
+            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Crown className="text-indigo-600" size={26} />
             </div>
             <h3 className="font-semibold text-gray-800 text-lg mb-3">
               Access Restricted
@@ -55,10 +58,10 @@ const FeatureRestrictionPopup = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+              className="px-4 py-2.5 border border-gray-300 text-black rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
             >
               Close
             </button>
@@ -66,12 +69,20 @@ const FeatureRestrictionPopup = ({
             {showUpgradeButton && (
               <button
                 onClick={onUpgrade}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all font-medium text-sm flex items-center justify-center gap-2"
+                className="px-4 py-2.5 bg-gradient-to-r from-[#192070] via-[#2736C0] to-[#424EC5] text-white rounded-lg hover:opacity-90 transition-all font-medium text-sm flex items-center justify-center gap-2"
               >
                 <Crown size={16} />
                 Upgrade Plan
               </button>
             )}
+
+            {/* Buy Plan Button */}
+            <button
+              onClick={() => navigate("/pricing")}
+              className="px-4 py-2.5 bg-gradient-to-r from-[#192070] via-[#2736C0] to-[#424EC5] text-white rounded-lg hover:from-[#424EC5] bg-[#424EC5] transition-all font-medium text-sm"
+            >
+              Buy Plan
+            </button>
           </div>
         </div>
       </div>
