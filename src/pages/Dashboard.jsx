@@ -804,31 +804,44 @@ const handleExport = async () => {
 
 
 
-  useEffect(() => {
-    const handlePopState = (e) => {
-      console.log("🔥 Browser back/forward detected");
-    };
+  // 🔥 REPLACE YOUR EXISTING popstate useEffect WITH THIS:
 
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+useEffect(() => {
+  const handlePopState = (e) => {
+    console.log("🔥 Browser back/forward detected");
+    
+    // 🔥 READ CURRENT URL PARAMS
+    const searchParams = new URLSearchParams(window.location.search);
+    const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+    
+    // 🔥 SYNC PAGE STATE WITH URL
+    if (pageFromUrl !== currentPage) {
+      console.log(`🔥 Syncing page from browser navigation: ${pageFromUrl}`);
+      setCurrentPage(pageFromUrl);
+    }
+    
+    // 🔥 DECODE AND APPLY FILTERS FROM URL
+    const decodedFilters = decodeUrlToFilters(searchParams);
+    if (!decodedFilters.ordering) {
+      decodedFilters.ordering = "closing_date";
+    }
+    
+    setFilters(decodedFilters);
+    setAppliedFilters(decodedFilters);
+    
+    // 🔥 SYNC SEARCH TERM
+    const searchTerm = searchParams.get("search") || "";
+    setTopSearchTerm(searchTerm);
+  };
 
-  // 🔥 BROWSER HISTORY MANAGEMENT
-  // useEffect(() => {
-  //   const handlePopState = (e) => {
-  //     // Don't prevent the default back button behavior
-  //     // Let React Router handle the navigation properly
-  //     console.log("🔥 Browser back/forward detected");
-  //   };
+  window.addEventListener('popstate', handlePopState);
 
-  //   window.addEventListener('popstate', handlePopState);
+  return () => {
+    window.removeEventListener('popstate', handlePopState);
+  };
+}, [currentPage, setFilters, setAppliedFilters, setTopSearchTerm]);
 
-  //   return () => {
-  //     window.removeEventListener('popstate', handlePopState);
-  //   };
-  // }, []);
+
 
   // 🔥 FETCH BID COUNT
   useEffect(() => {
@@ -1130,6 +1143,18 @@ useEffect(() => {
     dispatch(fetchUserProfile());
   }, [dispatch]);
 
+  useEffect(() => {
+  // 🔥 SYNC PAGE FROM URL ON ROUTE CHANGES
+  const searchParams = new URLSearchParams(location.search);
+  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+  
+  // 🔥 ONLY UPDATE IF DIFFERENT TO AVOID INFINITE LOOPS
+  if (pageFromUrl !== currentPage) {
+    console.log(`🔥 Syncing page from URL: ${pageFromUrl}`);
+    setCurrentPage(pageFromUrl);
+  }
+}, [location.search]);
+
   // 🔥 SAVED SEARCH SELECT HANDLER
   const handleSavedSearchSelect = async (searchId) => {
     if (searchId === "_default_" || !searchId) {
@@ -1215,7 +1240,7 @@ useEffect(() => {
       ...newFilters,
       ordering: newFilters.ordering || appliedFilters.ordering || "closing_date"
     };
-
+      setCurrentPage(1);
     // setTopSearchTerm(""); // Clear search term when filters are applied
     handleFiltersApply(filtersWithOrdering);
   };
@@ -1225,23 +1250,31 @@ useEffect(() => {
     console.log("Save or Update called with data:", data);
   };
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    setTimeout(() => {
-      if (bidsSectionRef.current) {
-        bidsSectionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }, 100);
-  };
+ const handlePageChange = (page) => {
+  setCurrentPage(page);
+  
+  // 🔥 UPDATE URL WITH NEW PAGE NUMBER
+  const searchParams = new URLSearchParams(location.search);
+  searchParams.set('page', page.toString());
+  
+  // 🔥 BUILD NEW URL WITH UPDATED PAGE
+  const newURL = `/dashboard?${searchParams.toString()}`;
+  
+  // 🔥 UPDATE BROWSER URL WITHOUT FULL PAGE RELOAD
+  navigate(newURL, { replace: false }); // replace: false allows proper back navigation
+  
+  // 🔥 SCROLL TO TABLE SECTION
+  setTimeout(() => {
+    if (bidsSectionRef.current) {
+      bidsSectionRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, 100);
+};
 
-  // const handleExport = () => {
-  //   if (tableRef.current) {
-  //     tableRef.current.exportToCSV();
-  //   }
-  // };
+  
 
   return (
     <>
