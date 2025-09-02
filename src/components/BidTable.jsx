@@ -1,5 +1,3 @@
-// Enhanced BidTable.jsx with All Restrictions for Free & Starter Plans
-
 import React, { useEffect, useState, useImperativeHandle, forwardRef, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BlogShareButton from "./BlogShareButton";
@@ -25,7 +23,7 @@ const BidTable = forwardRef(({
   const [selectedEntity, setSelectedEntity] = useState("Entity Type");
   const dropdownRef = useRef(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-const [popupData, setPopupData] = useState({});
+  const [popupData, setPopupData] = useState({});
 
 
   // Plan hook
@@ -36,6 +34,10 @@ const [popupData, setPopupData] = useState({});
     blurConfig,
     validateAndExecute
   } = usePlan();
+  console.log("blurConfig->>>>>>>", blurConfig);
+
+
+  console.log( "plan info ->>>>>>>>>>>>>>>>>>>>>>>..." , planInfo);
 
   useEffect(() => {
     setData([...bids]);
@@ -76,63 +78,66 @@ const [popupData, setPopupData] = useState({});
 
 
   const handleRowClick = (id, bidIndex) => {
-  if (planInfo?.isFree) {
-    onFeatureRestriction(
-      "🔒 Bid Summary Locked",
-      "Upgrade your plan to view full bid summaries and details.",
-      "Bid Summary Feature",
-      true
-    );
-  } else {
-    navigate(`/summary/${id}`);
-  }
-};
+    // Check if bid summary feature is restricted (same pattern as follow button)
+    if (restrictions?.bidSummary) {
+      onFeatureRestriction(
+        "🔒 Bid Summary Feature Locked",
+        "Upgrade your plan to view detailed bid summaries and analysis.",
+        "Bid Summary Feature",
+        true
+      );
+    } else {
+      // For users without restriction - directly navigate
+      console.log("✅ Navigating to bid summary:", id);
+      navigate(`/summary/${id}`);
+    }
+  };
 
 
-    //  <td className="px-4 py-4 text-center">
-    //                 <button
-    //                   onClick={(e) => {
-    //                     e.stopPropagation();
-    //                     if (restrictions?.follow) {
-    //                       onFeatureRestriction(
-    //                         "🔒 Follow Feature Locked",
-    //                         "Upgrade your plan to follow important bids and get notifications.",
-    //                         "Follow Feature",
-    //                         true
-    //                       );
-    //                     } else {
-    //                       handleFollowClick(e, bid.id);
-    //                     }
-    //                   }}
-    //                   disabled={isLoading}
-    //                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
-    //                       ? 'opacity-50 bg-white/10'
-    //                       : isLoading
-    //                         ? 'opacity-50 cursor-not-allowed'
-    //                         : 'hover:scale-110 cursor-pointer'
-    //                     }`}
-    //                   title={
-    //                     restrictions?.follow
-    //                       ? "Upgrade to follow bids"
-    //                       : isFollowed
-    //                         ? "Unfollow this bid"
-    //                         : "Follow this bid"
-    //                   }
-    //                 >
-    //                   {restrictions?.follow ? (
-    //                     <i className="fas fa-lock text-sm text-white/60"></i>
-    //                   ) : isLoading ? (
-    //                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-    //                   ) : (
-    //                     <i
-    //                       className={`fas text-lg transition-colors ${isFollowed
-    //                           ? "fa-minus-circle text-white-400 hover:text-white-300"
-    //                           : "fa-plus-circle text-white-400 hover:text-white-300"
-    //                         }`}
-    //                     />
-    //                   )}
-    //                 </button>
-    //               </td>
+  //  <td className="px-4 py-4 text-center">
+  //                 <button
+  //                   onClick={(e) => {
+  //                     e.stopPropagation();
+  //                     if (restrictions?.follow) {
+  //                       onFeatureRestriction(
+  //                         "🔒 Follow Feature Locked",
+  //                         "Upgrade your plan to follow important bids and get notifications.",
+  //                         "Follow Feature",
+  //                         true
+  //                       );
+  //                     } else {
+  //                       handleFollowClick(e, bid.id);
+  //                     }
+  //                   }}
+  //                   disabled={isLoading}
+  //                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
+  //                       ? 'opacity-50 bg-white/10'
+  //                       : isLoading
+  //                         ? 'opacity-50 cursor-not-allowed'
+  //                         : 'hover:scale-110 cursor-pointer'
+  //                     }`}
+  //                   title={
+  //                     restrictions?.follow
+  //                       ? "Upgrade to follow bids"
+  //                       : isFollowed
+  //                         ? "Unfollow this bid"
+  //                         : "Follow this bid"
+  //                   }
+  //                 >
+  //                   {restrictions?.follow ? (
+  //                     <i className="fas fa-lock text-sm text-white/60"></i>
+  //                   ) : isLoading ? (
+  //                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  //                   ) : (
+  //                     <i
+  //                       className={`fas text-lg transition-colors ${isFollowed
+  //                           ? "fa-minus-circle text-white-400 hover:text-white-300"
+  //                           : "fa-plus-circle text-white-400 hover:text-white-300"
+  //                         }`}
+  //                     />
+  //                   )}
+  //                 </button>
+  //               </td>
 
 
 
@@ -146,9 +151,9 @@ const [popupData, setPopupData] = useState({});
 
 
   // Enhanced follow click with restriction check
-  
-  
-  
+
+
+
   const handleFollowClick = (e, bidId) => {
     e.stopPropagation();
     onFollowBid(bidId);
@@ -187,7 +192,10 @@ const [popupData, setPopupData] = useState({});
   const shouldBlurColumn = (columnName, bidIndex) => {
 
     if (!blurConfig.enabled) return false;
+    console.log(!shouldBlurBid(bidIndex))
+    console.log(bidIndex)
     if (!shouldBlurBid(bidIndex)) return false;
+
     return blurConfig.blur_columns?.includes(columnName) || false;
   };
 
@@ -265,31 +273,7 @@ const [popupData, setPopupData] = useState({});
   return (
     <div className="bid-table rounded-2xl bg-btn text-white my-[50px] shadow-xl overflow-x-auto border-white border-2 border-solid relative max-h-screen overflow-y-auto">
 
-      {/* Free plan notification bar */}
-      {planInfo?.isFree && blurConfig.enabled && (
-        <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-b border-white/10 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <i className="fas fa-crown text-yellow-400"></i>
-              <span className="text-sm">
-                <strong>Free Plan:</strong> Limited to {blurConfig.blur_after} visible bids.
-                Upgrade to see all {totalCount} bids and unlock premium features.
-              </span>
-            </div>
-            <button
-              onClick={() => onFeatureRestriction(
-                "🚀 Upgrade Your Plan",
-                "Unlock all bids and premium features with our paid plans.",
-                "Premium Access",
-                true
-              )}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-1 rounded-full text-sm font-medium transition-colors"
-            >
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      )}
+
 
       <table className="min-w-full table-auto text-sm text-center">
         <thead className="sticky z-10 top-0 bg-white/5 backdrop-blur-sm">
@@ -356,7 +340,7 @@ const [popupData, setPopupData] = useState({});
             <th className="px-4 py-4 font-inter text-lg">Bid Name</th>
 
             {/* 🔥 FIXED: Sortable headers with proper restriction checks */}
-            <th className={`px-4 py-4 font-inter text-lg ${planInfo?.isFree && restrictions?.sorting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            <th className={`px-4 py-4 font-inter text-lg ${planInfo?.isFree && restrictions?.sorting ? ' opacity-60' : 'cursor-pointer'
               }`}
               onClick={(e) => handleHeaderClick("open_date", e)}
               title={planInfo?.isFree && restrictions?.sorting ? "Upgrade to sort by open date" : "Click to sort by open date"}>
@@ -523,10 +507,10 @@ const [popupData, setPopupData] = useState({});
                       }}
                       disabled={isLoading}
                       className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
-                          ? 'opacity-50 bg-white/10'
-                          : isLoading
-                            ? 'opacity-50 cursor-not-allowed'
-                            : 'hover:scale-110 cursor-pointer'
+                        ? 'opacity-50 bg-white/10'
+                        : isLoading
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:scale-110 cursor-pointer'
                         }`}
                       title={
                         restrictions?.follow
@@ -543,8 +527,8 @@ const [popupData, setPopupData] = useState({});
                       ) : (
                         <i
                           className={`fas text-lg transition-colors ${isFollowed
-                              ? "fa-minus-circle text-white-400 hover:text-white-300"
-                              : "fa-plus-circle text-white-400 hover:text-white-300"
+                            ? "fa-minus-circle text-white-400 hover:text-white-300"
+                            : "fa-plus-circle text-white-400 hover:text-white-300"
                             }`}
                         />
                       )}

@@ -59,6 +59,36 @@ function Dashboard() {
     handleSearchInputChange
   } = useSearchHandling(appliedFilters, perPage);
 
+  const showFeatureRestriction = (title, message, featureName = "Premium Feature", showUpgrade = true) => {
+    setRestrictionPopup({
+      isOpen: true,
+      title,
+      message,
+      featureName,
+      showUpgradeButton: showUpgrade
+    });
+  };
+
+  const {
+    planInfo,
+    restrictions,
+    validateAndExecute,
+    isRestricted,
+    blurConfig,
+    shouldBlurBid
+  } = usePlan();
+
+
+  console.log("=== PLAN DEBUG START ===");
+console.log("userPlan from redux:", useSelector((state) => state.login?.user?.plan));
+console.log("planInfo:", planInfo);
+console.log("planInfo.code:", planInfo?.code);
+console.log("planInfo.isFree:", planInfo?.isFree);
+console.log("restrictions object:", restrictions);
+console.log("restrictions.advanceSearch:", restrictions?.advanceSearch);
+console.log("=== PLAN DEBUG END ===");
+  
+
   const {
     sidebarToggle,
     setSidebarToggle,
@@ -71,17 +101,11 @@ function Dashboard() {
     setSelectedSavedSearch,
     saveSearchFilters,
     setSaveSearchFilters,
-    handleOpenFilter
-  } = useDashboardUI();
+    handleOpenFilter,
+    handleSaveSearchClick
+  } = useDashboardUI(restrictions, showFeatureRestriction);
 
-  const {
-    planInfo,
-    restrictions,
-    validateAndExecute,
-    isRestricted,
-    blurConfig,
-    shouldBlurBid
-  } = usePlan();
+
 
   // 🔥 REMAINING LOCAL STATE
   const [bidCount, setBidCount] = useState({ count: 0, new_bids: 0 });
@@ -115,15 +139,7 @@ function Dashboard() {
 
 
 
-  const showFeatureRestriction = (title, message, featureName = "Premium Feature", showUpgrade = true) => {
-    setRestrictionPopup({
-      isOpen: true,
-      title,
-      message,
-      featureName,
-      showUpgradeButton: showUpgrade
-    });
-  };
+
 
 
 
@@ -149,17 +165,6 @@ function Dashboard() {
   };
 
   const handleExport = async () => {
-    // 🔥 FIX: For FREE users (001), show FeatureRestrictionPopup directly
-    if (restrictions?.export) {
-      showFeatureRestriction(
-        "🔒 Export Feature Locked",
-        "Upgrade your plan to export bid data in CSV format for analysis and reporting.",
-        "Export Feature",
-        true
-      );
-      return;
-    }
-
     setExportLoading(true);
 
     try {
@@ -654,7 +659,19 @@ function Dashboard() {
   }, [location.search]);
 
   // 🔥 SAVED SEARCH SELECT HANDLER
-  const handleSavedSearchSelect = async (searchId) => {
+  const enhancedHandleSavedSearchSelect = async (searchId) => {
+    // Check restriction first
+    if (restrictions?.savedSearch) {
+      showFeatureRestriction(
+        "🔒 Saved Search Locked",
+        "Upgrade your plan to access and manage your saved searches.",
+        "Saved Search Feature",
+        true
+      );
+      return;
+    }
+
+    // Original logic
     if (searchId === "_default_" || !searchId) {
       const defaultFilters = { ...DASHBOARD_CONSTANTS.DEFAULT_FILTERS, ordering: "closing_date" };
 
@@ -667,7 +684,6 @@ function Dashboard() {
       setCurrentPage(1);
       setTopSearchTerm("");
 
-      // ✅ ADD replace: true here
       navigate("/dashboard?page=1&pageSize=25&bid_type=Active&ordering=closing_date", { replace: true });
       return;
     }
@@ -680,7 +696,6 @@ function Dashboard() {
       console.log(matched?.query_string, "🔥 Matched saved search");
       if (!matched) return;
 
-      // ✅ ADD: Check if already processing same search
       if (selectedSavedSearch?.id === matched.id) {
         console.log("🔄 Same search already selected, skipping duplicate processing");
         return;
@@ -694,7 +709,6 @@ function Dashboard() {
       }
       console.log(decodedFilters, "🔥 Decoded filters from saved search");
 
-      // Set the selected saved search state BEFORE navigation
       setSelectedSavedSearch({
         id: matched.id,
         name: matched.name,
@@ -723,12 +737,12 @@ function Dashboard() {
       urlParamsForNav.set('id', matched.id);
 
       const fullURL = `/dashboard?${urlParamsForNav.toString()}`;
-      // ✅ ADD replace: true here
       navigate(fullURL, { replace: true });
     } catch (err) {
       console.error("Failed to load saved search filters", err);
     }
   };
+
 
 
   // 🔥 ENHANCED FILTER APPLY HANDLER (with search term clearing)
@@ -802,7 +816,7 @@ function Dashboard() {
 
         {saveSearchToggle && (
           <FilterPanelSaveSearch
-            handleSavedSearchSelect={handleSavedSearchSelect} // ✅ PASS THE HANDLER
+            handleSavedSearchSelect={enhancedHandleSavedSearchSelect} // ✅ PASS THE HANDLER
             filters={saveSearchFilters}
             setFilters={setSaveSearchFilters}
             onClose={() => setSaveSearchToggle(false)}
@@ -838,15 +852,28 @@ function Dashboard() {
             <div className="flex justify-between items-center">
               <div className="feature-left">
                 <div
-                  className="bg-btn p-4 w-[56px] h-[56px] rounded-[16px] flex justify-center items-center cursor-pointer"
-                  onClick={handleOpenFilter}
+                  className={`bg-btn p-4 w-[56px] h-[56px] rounded-[16px] flex justify-center items-center cursor-pointer ${restrictions?.advanceSearch ? 'opacity-50 bg-white/10' : ''
+                    }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenFilter(); // Use enhanced function
+                  }}
                   id="filter"
+                  title={
+                    restrictions?.advanceSearch
+                      ? "Upgrade to use advanced filters"
+                      : "Filter bids"
+                  }
                 >
-                  <img
-                    src={sidebarToggle ? "/close.png" : "/filter.png"}
-                    className="w-6"
-                    alt="Filter Toggle"
-                  />
+                  {restrictions?.advanceSearch ? (
+                    <i className="fas fa-lock text-sm text-white/60 w-6 h-6 flex items-center justify-center"></i>
+                  ) : (
+                    <img
+                      src={sidebarToggle ? "/close.png" : "/filter.png"}
+                      className="w-6"
+                      alt="Filter Toggle"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -876,39 +903,87 @@ function Dashboard() {
                 )}
               </div>
 
+
+
               <div className="feature-right">
                 <div className="flex gap-4 items-center">
-                  {/* 🚀 UPDATED EXPORT BUTTON WITH LOADING STATE */}
+                  {/* Export Button (already has restrictions) */}
                   <div
-                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading || restrictions?.export ? 'opacity-50' : ''
+                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading ? 'opacity-50' : restrictions?.export ? 'opacity-50 bg-white/10' : ''
                       }`}
-                    onClick={exportLoading || restrictions?.export ? null : handleExport}
-                    id="export"
-                    title={restrictions?.export ? "🔒 Upgrade to export bids" : "Export bids"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (restrictions?.export) {
+                        showFeatureRestriction(
+                          "🔒 Export Feature Locked",
+                          "Upgrade your plan to export bid data in CSV format for analysis and reporting.",
+                          "Export Feature",
+                          true
+                        );
+                      } else if (!exportLoading) {
+                        handleExport();
+                      }
+                    }}
+                    title={
+                      restrictions?.export
+                        ? "Upgrade to export bids"
+                        : exportLoading
+                          ? "Exporting..."
+                          : "Export bids to CSV"
+                    }
                   >
-                    {exportLoading ? (
+                    {restrictions?.export ? (
+                      <i className="fas fa-lock text-sm text-white/60 w-6 h-6 flex items-center justify-center"></i>
+                    ) : exportLoading ? (
                       <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <img src="/export.png" className="w-6" alt="Export" />
                     )}
-                    {/* 🔥 Add lock indicator for restricted users */}
-                    {restrictions?.export && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                        <i className="fas fa-lock text-xs text-black"></i>
-                      </div>
-                    )}
                   </div>
-                  <ProfessionalSavedSearchDropdown
-                    savedSearches={savedSearches}
-                    selectedSavedSearch={selectedSavedSearch}
-                    handleSavedSearchSelect={handleSavedSearchSelect}
-                  />
 
+                  {/* Saved Search Dropdown with restrictions */}
+                  <div
+                    className={`${restrictions?.savedSearch ? 'opacity-50' : ''}`}
+                    onClick={(e) => {
+                      if (restrictions?.savedSearch) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showFeatureRestriction(
+                          "🔒 Saved Search Locked",
+                          "Upgrade your plan to access and manage your saved searches for quick filtering.",
+                          "Saved Search Feature",
+                          true
+                        );
+                      }
+                    }}
+                    title={restrictions?.savedSearch ? "Upgrade to use saved searches" : undefined}
+                  >
+                    <ProfessionalSavedSearchDropdown
+                      savedSearches={restrictions?.savedSearch ? [] : savedSearches}
+                      selectedSavedSearch={restrictions?.savedSearch ? null : selectedSavedSearch}
+                      handleSavedSearchSelect={restrictions?.savedSearch ? () => { } : enhancedHandleSavedSearchSelect}
+                      disabled={restrictions?.savedSearch}
+                    />
+                  </div>
+
+                  {/* Save Search Button with restrictions */}
                   <BgCover>
                     <div
-                      className="text-white cursor-pointer"
-                      onClick={() => setSaveSearchToggle(true)}
+                      className={`text-white cursor-pointer flex items-center ${restrictions?.savedSearch ? 'opacity-50' : ''
+                        }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSaveSearchClick(); // Use the new function with restrictions
+                      }}
+                      title={
+                        restrictions?.savedSearch
+                          ? "Upgrade to save searches"
+                          : "Save current search"
+                      }
                     >
+                      {restrictions?.savedSearch && (
+                        <i className="fas fa-lock text-sm text-white/60 mr-2"></i>
+                      )}
                       Save Search
                     </div>
                   </BgCover>
@@ -917,27 +992,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {planInfo?.isFree && (
-            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <i className="fas fa-crown text-yellow-400 text-lg"></i>
-                  <div>
-                    <p className="text-white font-medium">Free Plan Active</p>
-                    <p className="text-white/70 text-sm">
-                      Limited features enabled. Upgrade to unlock full access to all bids and premium features.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate("/pricing")}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Upgrade Now
-                </button>
-              </div>
-            </div>
-          )}
+          
 
           <div className="w-full" ref={bidsSectionRef}>
             {(loading || (isBookmarkView && bookmarkLoading)) ? (

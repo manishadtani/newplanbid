@@ -20,26 +20,26 @@ export const PLAN_RESTRICTIONS = {
     },
     blur_entity_dropdown: { restricted: true, message: "Upgrade to filter by entity types." }
   },
-  '002': { // Starter Plan
+  '002': { // Starter Plan - Follow & Export Disabled, Filter Enabled
     bid_summary: { restricted: false }, // ✅ Allow bid summary access
-    share: { restricted: false },
-    export: { restricted: false, has_limit: true },
-    follow: { restricted: false, has_limit: true },
-    bookmark: { restricted: false, has_limit: true },
-    advance_search: { restricted: true, message: "Upgrade to Essentials for advanced search" },
-    saved_search: { restricted: false, has_limit: true },
+    share: { restricted: true, message: "Upgrade your plan to share bids with your team and colleagues." },
+    export: { restricted: true, message: "Upgrade to Essentials plan to export bid data in CSV format for analysis and reporting." }, // 🔥 Disabled for Starter
+    follow: { restricted: true, message: "Upgrade to Essentials plan to follow important bids and get instant notifications." }, // 🔥 Disabled for Starter
+     bookmark: { restricted: false, has_limit: true, limit: 5, message: "You've reached the maximum of 5 bookmarks. Upgrade to Essentials for unlimited bookmarks." }, 
+    advance_search: { restricted: false }, // 🔥 ENABLED: Allow advanced search for Starter
+    saved_search: { restricted: false, has_limit: true, limit: 1, message: "You've reached the maximum of 1 saved search. Upgrade to Essentials for unlimited saved searches." },
     sorting: { restricted: false }, // ✅ Allow sorting for Starter
     blur_bids: { enabled: false }, // ✅ No blur for Starter
     blur_entity_dropdown: { restricted: false } // ✅ Allow entity dropdown for Starter
   },
-  '003': { // Essentials Plan
+  '003': { // Essentials Plan - Full Access
     bid_summary: { restricted: false },
     share: { restricted: false },
-    export: { restricted: false, has_limit: true },
-    follow: { restricted: false, has_limit: true },
-    bookmark: { restricted: false, has_limit: true },
+    export: { restricted: false, has_limit: true, limit: 100, message: "You've reached the maximum of 100 exports. Upgrade to Essentials for more exports." }, // ✅ Enabled for Essentials
+    follow: { restricted: false, has_limit: true, limit: 10, message: "You've reached the maximum of 10 Follows. Upgrade to Essentials for unlimited Follows."  }, // ✅ Enabled for Essentials
+     bookmark: { restricted: false, has_limit: true, limit: 20, message: "You've reached the maximum of 20 bookmarks. Upgrade to Essentials for unlimited bookmarks." },
     advance_search: { restricted: false },
-    saved_search: { restricted: false, has_limit: true },
+    saved_search: { restricted: false, has_limit: true, limit: 5, message: "You've reached the maximum of 5 saved search. Upgrade to Essentials for unlimited saved searches." },
     sorting: { restricted: false },
     blur_bids: { enabled: false },
     blur_entity_dropdown: { restricted: false }
@@ -50,13 +50,30 @@ export const PLAN_RESTRICTIONS = {
  * Check if feature is restricted for current plan
  */
 export const isFeatureRestricted = (userPlan, feature) => {
-  console.log(userPlan, feature );
-  if (!userPlan?.plan_code) return true;
+  console.log("🔥 isFeatureRestricted called with:", { 
+    userPlan, 
+    feature,
+    plan_code: userPlan?.plan_code,
+    plan_name: userPlan?.name 
+  });
+  
+  if (!userPlan?.plan_code) {
+    //console.log("❌ No plan_code found, returning true");
+    return true;
+  }
   
   const restrictions = PLAN_RESTRICTIONS[userPlan.plan_code];
-  if (!restrictions || !restrictions[feature]) return false;
+  //console.log("📋 Plan restrictions for", userPlan.plan_code, ":", restrictions);
   
-  return restrictions[feature].restricted === true;
+  if (!restrictions || !restrictions[feature]) {
+    //console.log("✅ No restrictions found for feature", feature);
+    return false;
+  }
+  
+  const isRestricted = restrictions[feature].restricted === true;
+  //console.log("🎯 Feature", feature, "restricted:", isRestricted);
+  
+  return isRestricted;
 };
 
 /**

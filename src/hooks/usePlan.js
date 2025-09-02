@@ -11,8 +11,23 @@ import {
 } from '../hooks/planHelpers'; // 🔥 Fixed import path
 
 export const usePlan = () => {
-  const userPlan = useSelector((state) => state.login?.user?.plan);
+  // const userPlan = useSelector((state) => 
+  //    state.login?.user?.plan);
+  // const isLoggedIn = useSelector((state) => !!state.login?.user);
+
+  // ✅ CHANGE 1: Get subscription plan from profile slice instead of login
+  const userPlan = useSelector((state) => 
+    state.profile?.profile?.subscription_plan);
+  
+  const profileLoading = useSelector((state) => state.profile?.loading);
   const isLoggedIn = useSelector((state) => !!state.login?.user);
+
+  console.log("🔥 usePlan Debug:", {
+    userPlan,
+    profileLoading,
+    isLoggedIn,
+    plan_code: userPlan?.plan_code
+  });
 
   // Plan info with restriction details
   const planInfo = useMemo(() => {
