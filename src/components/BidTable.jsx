@@ -1,57 +1,41 @@
+// Enhanced BidTable.jsx with All Restrictions for Free & Starter Plans
 
-import React, {
-  useEffect,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-  useRef
-} from "react";
+import React, { useEffect, useState, useImperativeHandle, forwardRef, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import BlogShareButton from "./BlogShareButton"; 
+import BlogShareButton from "./BlogShareButton";
+import { usePlan } from "../hooks/usePlan";
 
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
-}
+const BidTable = forwardRef(({
+  bids = [],
+  totalCount = 0,
+  currentSortField = "",
+  currentSortOrder = "",
+  onSort = () => { },
+  onEntityTypeChange = () => { },
+  onFollowBid = () => { },
+  onFeatureRestriction = () => { },
+  followedBids = new Set(),
+  followLoading = new Set(),
+  sortingDisabled = false
+}, ref) => {
 
-function getCountdown(closingDateStr) {
-  if (!closingDateStr) return "-";
-  const closingDate = new Date(closingDateStr);
-  const now = new Date();
-  const diffInMs = closingDate.getTime() - now.getTime();
-  const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (isNaN(diffInDays)) return "-";
-  if (diffInDays < 0) return "Closed";
-  if (diffInDays === 1) return "1 day";
-  return `${diffInDays} days`;
-}
-
-const convertToCSV = (rows) => {
-  if (!rows?.length) return "";
-
-  const headers = ["Jurisdiction", "Bid Name", "Open Date", "Closed Date", "Countdown", "Status"];
-
-  const csvRows = rows.map((bid) => [
-    `"${bid.jurisdiction ?? ""}"`,
-    `"${bid.bid_name ?? ""}"`,
-    `"${formatDate(bid.open_date)}"`,
-    `"${formatDate(bid.closing_date)}"`,
-    `"${getCountdown(bid.closing_date)}"`,
-    `"${bid.bid_type || "Unknown"}"`, 
-  ]);
-
-  return [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
-};
-
-const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "", currentSortOrder = "", onSort = () => { }, onEntityTypeChange = () => { },onFollowBid = () => { }, followedBids = new Set(), followLoading = new Set()}, ref) => {
-  // onFeatureRestriction = () => { } 
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState("Entity Type");
   const dropdownRef = useRef(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+const [popupData, setPopupData] = useState({});
+
+
+  // Plan hook
+  const {
+    planInfo,
+    restrictions,
+    shouldBlurBid,
+    blurConfig,
+    validateAndExecute
+  } = usePlan();
 
   useEffect(() => {
     setData([...bids]);
@@ -66,115 +50,300 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-    
-//   const handleRowClick = async (id) => {
-//   try {
-//     console.log("🔥 Fetching bid details for ID:", id);
-    
-//     // API call karke bid details fetch karo
-//     const bidDetails = await getBids(id); // Single bid fetch
-    
-//     console.log("✅ Bid details fetched successfully");
-//     // Agar success hai to navigate karo
-//     navigate(`/summary/${id}`);
-    
-//   } catch (error) {
-//     console.error("❌ Error fetching bid details:", error);
-    
-//     // Check if it's a restriction error (403 status)
-//     if (error.response?.status === 403) {
-//       const errorMessage = error.response?.data?.detail || "Upgrade your plan to view this bid summary.";
-      
-//       // Popup show karo using parent function
-//       if (onFeatureRestriction) {
-//         onFeatureRestriction(
-//           "Bid Summary Restricted",
-//           errorMessage,
-//           "Bid Summary Access",
-//           true
-//         );
-//       }
-//     } else {
-//       // Other errors ke liye generic message
-//       if (onFeatureRestriction) {
-//         onFeatureRestriction(
-//           "Error Loading Bid",
-//           "Unable to load bid details. Please try again.",
-//           "Bid Access",
-//           false
-//         );
-//       }
-//     }
-//   }
-// };
+
+  // 🔥 FIX 1: Enhanced row click with bid summary restriction for FREE users only
+  // const handleRowClick = (id, bidIndex) => {
+  //   // 🔥 FIXED: Only show restriction for FREE plan (001)
+  //   if (planInfo?.isFree) {
+  //     // For FREE users - show restriction popup
+  //     validateAndExecute(
+  //       'bid_summary',
+  //       (popupData) => {
+  //         onFeatureRestriction(
+  //           popupData.title,
+  //           popupData.message,
+  //           popupData.feature,
+  //           popupData.needsUpgrade
+  //         );
+  //       }
+  //     );
+  //   } else {
+  //     // 🔥 FIXED: For STARTER (002) and above - directly navigate
+  //     console.log("✅ Starter+ plan - Navigating to bid summary:", id);
+  //     navigate(`/summary/${id}`);
+  //   }
+  // };
 
 
-
-  const handleRowClick = (id) => {
-    console.log(id);
+  const handleRowClick = (id, bidIndex) => {
+  if (planInfo?.isFree) {
+    onFeatureRestriction(
+      "🔒 Bid Summary Locked",
+      "Upgrade your plan to view full bid summaries and details.",
+      "Bid Summary Feature",
+      true
+    );
+  } else {
     navigate(`/summary/${id}`);
-  };
+  }
+};
 
-   const handleFollowClick = (e, bidId) => {
-    e.stopPropagation(); // Prevent row click when follow button is clicked
+
+    //  <td className="px-4 py-4 text-center">
+    //                 <button
+    //                   onClick={(e) => {
+    //                     e.stopPropagation();
+    //                     if (restrictions?.follow) {
+    //                       onFeatureRestriction(
+    //                         "🔒 Follow Feature Locked",
+    //                         "Upgrade your plan to follow important bids and get notifications.",
+    //                         "Follow Feature",
+    //                         true
+    //                       );
+    //                     } else {
+    //                       handleFollowClick(e, bid.id);
+    //                     }
+    //                   }}
+    //                   disabled={isLoading}
+    //                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
+    //                       ? 'opacity-50 bg-white/10'
+    //                       : isLoading
+    //                         ? 'opacity-50 cursor-not-allowed'
+    //                         : 'hover:scale-110 cursor-pointer'
+    //                     }`}
+    //                   title={
+    //                     restrictions?.follow
+    //                       ? "Upgrade to follow bids"
+    //                       : isFollowed
+    //                         ? "Unfollow this bid"
+    //                         : "Follow this bid"
+    //                   }
+    //                 >
+    //                   {restrictions?.follow ? (
+    //                     <i className="fas fa-lock text-sm text-white/60"></i>
+    //                   ) : isLoading ? (
+    //                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+    //                   ) : (
+    //                     <i
+    //                       className={`fas text-lg transition-colors ${isFollowed
+    //                           ? "fa-minus-circle text-white-400 hover:text-white-300"
+    //                           : "fa-plus-circle text-white-400 hover:text-white-300"
+    //                         }`}
+    //                     />
+    //                   )}
+    //                 </button>
+    //               </td>
+
+
+
+
+
+
+
+
+
+
+
+
+  // Enhanced follow click with restriction check
+  
+  
+  
+  const handleFollowClick = (e, bidId) => {
+    e.stopPropagation();
     onFollowBid(bidId);
   };
 
+  // Enhanced export with restriction check
   const exportToCSV = () => {
-    const csv = convertToCSV(data);
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    link.href = url;
-    link.setAttribute("download", `bids_export_${timestamp}.csv`);
-    link.click();
-    URL.revokeObjectURL(url);
+    validateAndExecute(
+      'export',
+      (popupData) => {
+        onFeatureRestriction(
+          popupData.title,
+          popupData.message,
+          popupData.feature,
+          popupData.needsUpgrade
+        );
+      },
+      () => {
+        // Original CSV export logic
+        const csv = convertToCSV(data);
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+        link.href = url;
+        link.setAttribute("download", `bids_export_${timestamp}.csv`);
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    );
   };
 
   useImperativeHandle(ref, () => ({ exportToCSV }));
 
-  const truncate = (text) => !text ? "-" : text.length > 30 ? text.slice(0, 30) + "..." : text;
+  // Helper function to check if column should be blurred
+  const shouldBlurColumn = (columnName, bidIndex) => {
 
+    if (!blurConfig.enabled) return false;
+    if (!shouldBlurBid(bidIndex)) return false;
+    return blurConfig.blur_columns?.includes(columnName) || false;
+  };
+
+  // 🔥 FIX 3: Entity Type Handler with Restriction Check for FREE users only
+  const handleEntityTypeClick = (type) => {
+    // 🔥 FIXED: Only restrict for FREE plan (001)
+    if (planInfo?.isFree && restrictions?.entityDropdown) {
+      onFeatureRestriction(
+        "🔒 Filter Feature Locked",
+        "Upgrade your plan to filter bids by entity types (Federal, State, Local).",
+        "Entity Filter Feature",
+        true
+      );
+      return;
+    }
+
+    // For Starter and above, allow normal functionality
+    setSelectedEntity(type);
+    onEntityTypeChange(type === "Select Entity" ? "" : type);
+    setDropdownOpen(false);
+  };
+
+  // 🔥 FIX 2: Enhanced Header Click with Sorting Restriction for FREE users only
+  const handleHeaderClick = (field, e) => {
+    e.stopPropagation();
+
+    // 🔥 FIXED: Only restrict sorting for FREE plan (001)
+    if (planInfo?.isFree && restrictions?.sorting) {
+      onFeatureRestriction(
+        "🔒 Sorting Feature Locked",
+        "Upgrade your plan to sort bids by different criteria like date, status, etc.",
+        "Sorting Feature",
+        true
+      );
+      return;
+    }
+
+    // 🔥 FIXED: For STARTER (002) and above - allow normal sorting
+    console.log("✅ Starter+ plan - Sorting allowed for field:", field);
+    onSort(field);
+  };
+
+  // Updated getSortIcon with restriction check
   const getSortIcon = (field) => {
+    // 🔥 FIXED: Only show lock for FREE plan (001)
+    if (planInfo?.isFree && restrictions?.sorting) {
+      return <span className="ml-2"><i className="fas fa-lock text-xs text-white/40"></i></span>;
+    }
+
+    // 🔥 FIXED: For STARTER (002) and above - show normal sort icons
     const isCurrentField = currentSortField === field || currentSortField === `-${field}`;
     const isDescending = currentSortField === `-${field}`;
     if (!isCurrentField) return <span className="ml-2"><i className="fas fa-sort text-white/50 text-xs"></i></span>;
     return <span className="ml-2"><i className={`fas ${isDescending ? 'fa-sort-down' : 'fa-sort-up'} text-white text-xs`}></i></span>;
   };
 
-  const handleHeaderClick = (field, e) => {
-    e.stopPropagation();
-    onSort(field);
-  };
+  // Blur wrapper component
+  const BlurWrapper = ({ children, shouldBlur, className = "" }) => {
+    if (!shouldBlur) return children;
 
-  const handleEntityTypeClick = (type) => {
-    setSelectedEntity(type);
-    onEntityTypeChange(type === "Select Entity" ? "" : type);
-    setDropdownOpen(false);
+    return (
+      <div className={`relative ${className}`}>
+        <div className="filter blur-sm select-none pointer-events-none">
+          {children}
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-sm rounded px-2 py-1">
+            <i className="fas fa-lock text-xs text-white/60"></i>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className="bid-table rounded-2xl bg-btn text-white my-[50px] shadow-xl overflow-x-auto border-white border-2 border-solid relative max-h-screen overflow-y-auto">
+
+      {/* Free plan notification bar */}
+      {planInfo?.isFree && blurConfig.enabled && (
+        <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-b border-white/10 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-crown text-yellow-400"></i>
+              <span className="text-sm">
+                <strong>Free Plan:</strong> Limited to {blurConfig.blur_after} visible bids.
+                Upgrade to see all {totalCount} bids and unlock premium features.
+              </span>
+            </div>
+            <button
+              onClick={() => onFeatureRestriction(
+                "🚀 Upgrade Your Plan",
+                "Unlock all bids and premium features with our paid plans.",
+                "Premium Access",
+                true
+              )}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-1 rounded-full text-sm font-medium transition-colors"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <table className="min-w-full table-auto text-sm text-center">
         <thead className="sticky z-10 top-0 bg-white/5 backdrop-blur-sm">
           <tr className="text-white/80 text-xs border-b border-white/20">
 
+            {/* 🔥 FIXED: Entity Type Dropdown with Restriction */}
             <th className="px-4 py-4 font-inter text-lg relative">
               <div ref={dropdownRef} className="inline-block text-left">
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2  px-3 py-1 rounded-full"
+                  onClick={() => {
+                    if (restrictions.entityDropdown) {
+                      onFeatureRestriction(
+                        "🔒 Filter Feature Locked",
+                        "Upgrade your plan to filter bids by entity types (Federal, State, Local).",
+                        "Entity Filter Feature",
+                        true
+                      );
+                    } else {
+                      setDropdownOpen(!dropdownOpen);
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full relative ${restrictions.entityDropdown ? 'opacity-60' : ''
+                    }`}
+                  title={restrictions.entityDropdown ? "Upgrade to filter by entity type" : "Filter by entity type"}
                 >
-                  {selectedEntity} <i className="fas fa-caret-down text-sm"></i>
+                  {/* 🔥 BLUR Entity Dropdown for FREE users */}
+                  {restrictions.entityDropdown ? (
+                    <BlurWrapper shouldBlur={true} className="flex items-center gap-2">
+                      <span>Entity Type</span>
+                      <i className="fas fa-caret-down text-sm"></i>
+                    </BlurWrapper>
+                  ) : (
+                    <>
+                      {selectedEntity} <i className="fas fa-caret-down text-sm"></i>
+                    </>
+                  )}
+
+                  {/* Lock icon for restricted users */}
+                  {restrictions.entityDropdown && (
+                    <div className="">
+                      {/* <i className="fas fa-lock text-xs text-black"></i> */}
+                    </div>
+                  )}
                 </button>
-                {dropdownOpen && (
+
+                {/* Only show dropdown if not restricted */}
+                {dropdownOpen && !restrictions.entityDropdown && (
                   <div className="absolute mt-2 w-40 rounded-md bg-white text-black font-medium z-10">
                     {["Select Entity", "Federal", "State", "Local"].map((type) => (
                       <div
                         key={type}
                         onClick={() => handleEntityTypeClick(type)}
-                        className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${selectedEntity === type ? 'bg-gray-100 font-semibold' : ''}`}
+                        className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${selectedEntity === type ? 'bg-gray-100 font-semibold' : ''
+                          }`}
                       >
                         {type}
                       </div>
@@ -184,15 +353,36 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
               </div>
             </th>
 
-            <th className="px-4 py-4 font-inter text-lg cursor-pointer">Bid Name</th>
-            <th className="px-4 py-4 font-inter text-lg cursor-pointer" onClick={(e) => handleHeaderClick("open_date", e)}>Open Date {getSortIcon("open_date")}</th>
-            <th className="px-4 py-4 font-inter text-lg cursor-pointer" onClick={(e) => handleHeaderClick("closing_date", e)}>Closed Date {getSortIcon("closing_date")}</th>
-            <th className="px-4 py-4 font-inter text-lg cursor-pointer" onClick={(e) => handleHeaderClick("closing_date", e)} title="Sorted by closing date">Countdown {getSortIcon("closing_date")}</th>
+            <th className="px-4 py-4 font-inter text-lg">Bid Name</th>
+
+            {/* 🔥 FIXED: Sortable headers with proper restriction checks */}
+            <th className={`px-4 py-4 font-inter text-lg ${planInfo?.isFree && restrictions?.sorting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
+              onClick={(e) => handleHeaderClick("open_date", e)}
+              title={planInfo?.isFree && restrictions?.sorting ? "Upgrade to sort by open date" : "Click to sort by open date"}>
+              Open Date {getSortIcon("open_date")}
+            </th>
+
+            <th className={`px-4 py-4 font-inter text-lg ${planInfo?.isFree && restrictions?.sorting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
+              onClick={(e) => handleHeaderClick("closing_date", e)}
+              title={planInfo?.isFree && restrictions?.sorting ? "Upgrade to sort by closing date" : "Click to sort by closing date"}>
+              Closed Date {getSortIcon("closing_date")}
+            </th>
+
+            <th className={`px-4 py-4 font-inter text-lg ${planInfo?.isFree && restrictions?.sorting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
+              onClick={(e) => handleHeaderClick("closing_date", e)}
+              title={planInfo?.isFree && restrictions?.sorting ? "Upgrade to sort by countdown" : "Sort by countdown (closing date)"}>
+              Countdown {getSortIcon("closing_date")}
+            </th>
+
             <th className="px-4 py-4 font-inter text-lg">Status</th>
             <th className="px-4 py-4 font-inter text-lg text-center">Share</th>
             <th className="px-4 py-4 font-inter text-lg text-center">Follow</th>
           </tr>
         </thead>
+
         <tbody>
           {data.length === 0 ? (
             <tr>
@@ -203,22 +393,21 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
                   </div>
                   <div>
                     <p className="text-white/60 text-lg font-medium">No bids found</p>
-                    <p className="text-white/40 text-sm mt-1">
-                      {selectedEntity && selectedEntity !== "Select Entity"
-                        ? `No bids available for ${selectedEntity} entity type`
-                        : 'Try adjusting your filters'}
-                    </p>
-
+                    <p className="text-white/40 text-sm mt-1">Try adjusting your filters</p>
                   </div>
                 </div>
               </td>
             </tr>
           ) : (
-            data.map((bid) => {
+            data.map((bid, index) => {
               const statusLabel = bid.bid_type || "Unknown";
               const countdownRaw = getCountdown(bid.closing_date);
-              let countdownDisplay = countdownRaw;
+              const shouldBlurThisBid = shouldBlurBid(index);
+              const isFollowed = followedBids.has(bid.id);
+              const isLoading = followLoading.has(bid.id);
 
+              // Calculate countdown display (existing logic)
+              let countdownDisplay = countdownRaw;
               const closingDateObj = new Date(bid.closing_date);
               const today = new Date();
               const isClosingToday = closingDateObj.toDateString() === today.toDateString();
@@ -247,47 +436,117 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
                 }
               }
 
-               const isFollowed = followedBids.has(bid.id);
-              const isLoading = followLoading.has(bid.id);
-
               return (
-                <tr key={bid.id} className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer" onClick={() => handleRowClick(bid.id)}>
-                  <td className="px-4 py-4 font-semibold font-inter">{truncate(bid.entity_type)}</td>
-                  <td className="px-4 py-4 font-medium font-inter">{truncate(bid.bid_name)}</td>
-                  <td className="px-4 py-4 font-medium font-inter">{formatDate(bid.open_date)}</td>
-                  <td className="px-4 py-4 font-medium font-inter">{formatDate(bid.closing_date)}</td>
-                  <td className="px-4 py-4 font-medium font-inter" title={countdownRaw}><span className="text-white">{countdownDisplay}</span></td>
-                  <td className="px-4 py-4 font-medium font-inter">{statusLabel}</td>
-                  <td className="px-4 py-4 btn-box  text-center">
-                    <BlogShareButton
-                      url={`${window.location.origin}/summary/${bid.id}`}
-                      onShare={() => console.log(`Shared bid: ${bid.bid_name}`)}
-                    />
-
+                <tr
+                  key={bid.id}
+                  className={`border-b border-white/10 hover:bg-white/5 transition cursor-pointer ${shouldBlurThisBid ? 'opacity-75' : ''
+                    }`}
+                  onClick={() => handleRowClick(bid.id, index)}
+                >
+                  {/* Entity Type - No blur */}
+                  <td className="px-4 py-4 font-semibold font-inter">
+                    {truncate(bid.entity_type)}
                   </td>
+
+                  {/* Bid Name - Blur if needed */}
+                  <td className="px-4 py-4 font-medium font-inter">
+                    <BlurWrapper shouldBlur={shouldBlurColumn('bid_name', index)}>
+                      {truncate(bid.bid_name)}
+                    </BlurWrapper>
+                  </td>
+
+                  {/* Open Date - Blur if needed */}
+                  <td className="px-4 py-4 font-medium font-inter">
+                    <BlurWrapper shouldBlur={shouldBlurColumn('open_date', index)}>
+                      {formatDate(bid.open_date)}
+                    </BlurWrapper>
+                  </td>
+
+                  {/* Closing Date - Blur if needed */}
+                  <td className="px-4 py-4 font-medium font-inter">
+                    <BlurWrapper shouldBlur={shouldBlurColumn('closing_date', index)}>
+                      {formatDate(bid.closing_date)}
+                    </BlurWrapper>
+                  </td>
+
+                  {/* Countdown - Blur if needed */}
+                  <td className="px-4 py-4 font-medium font-inter" title={countdownRaw}>
+                    <BlurWrapper shouldBlur={shouldBlurColumn('countdown', index)}>
+                      <span className="text-white">{countdownDisplay}</span>
+                    </BlurWrapper>
+                  </td>
+
+                  {/* Status - No blur */}
+                  <td className="px-4 py-4 font-medium font-inter">{statusLabel}</td>
+
+                  {/* Share - With restriction */}
+                  <td className="px-4 py-4 btn-box text-center">
+                    {restrictions?.share ? (
+                      <div
+                        className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center opacity-50 relative"
+                        title="Upgrade to share bids"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFeatureRestriction(
+                            "🔒 Share Feature Locked",
+                            "Upgrade your plan to share bids with your team and colleagues.",
+                            "Share Feature",
+                            true
+                          );
+                        }}
+                      >
+                        <i className="fas fa-lock text-sm text-white/60"></i>
+                      </div>
+                    ) : (
+                      <BlogShareButton
+                        url={`${window.location.origin}/summary/${bid.id}`}
+                        onShare={() => console.log(`Shared bid: ${bid.bid_name}`)}
+                      />
+                    )}
+                  </td>
+
+                  {/* Follow - With restriction */}
                   <td className="px-4 py-4 text-center">
                     <button
-                      onClick={(e) => handleFollowClick(e, bid.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (restrictions?.follow) {
+                          onFeatureRestriction(
+                            "🔒 Follow Feature Locked",
+                            "Upgrade your plan to follow important bids and get notifications.",
+                            "Follow Feature",
+                            true
+                          );
+                        } else {
+                          handleFollowClick(e, bid.id);
+                        }
+                      }}
                       disabled={isLoading}
-                      className={`w-8 h-8 rounded-full   flex items-center justify-center transition-all duration-200 ${
-                        isLoading 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : 'hover:scale-110 cursor-pointer'
-                      }`}
-                      title={isFollowed ? "Unfollow this bid" : "Follow this bid"}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
+                          ? 'opacity-50 bg-white/10'
+                          : isLoading
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'hover:scale-110 cursor-pointer'
+                        }`}
+                      title={
+                        restrictions?.follow
+                          ? "Upgrade to follow bids"
+                          : isFollowed
+                            ? "Unfollow this bid"
+                            : "Follow this bid"
+                      }
                     >
-                      {isLoading ? (
-                        // Loading spinner
-                        <div className="w-4 h-4 border-2 border-white  border-t-transparent rounded-full animate-spin"></div>
+                      {restrictions?.follow ? (
+                        <i className="fas fa-lock text-sm text-white/60"></i>
+                      ) : isLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       ) : (
-                        // Follow/Unfollow icon
-                        <i 
-                          className={`fas text-lg transition-colors ${
-                            isFollowed 
-                              ? "fa-minus-circle text-white-400 hover:text-white-300" 
+                        <i
+                          className={`fas text-lg transition-colors ${isFollowed
+                              ? "fa-minus-circle text-white-400 hover:text-white-300"
                               : "fa-plus-circle text-white-400 hover:text-white-300"
-                          }`}
-                        ></i>
+                            }`}
+                        />
                       )}
                     </button>
                   </td>
@@ -301,17 +560,40 @@ const BidTable = forwardRef(({ bids = [], totalCount = 0, currentSortField = "",
   );
 });
 
+// Helper functions
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
+}
+
+function getCountdown(closingDateStr) {
+  if (!closingDateStr) return "-";
+  const closingDate = new Date(closingDateStr);
+  const now = new Date();
+  const diffInMs = closingDate.getTime() - now.getTime();
+  const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (isNaN(diffInDays)) return "-";
+  if (diffInDays < 0) return "Closed";
+  if (diffInDays === 1) return "1 day";
+  return `${diffInDays} days`;
+}
+
+const convertToCSV = (rows) => {
+  if (!rows?.length) return "";
+  const headers = ["Jurisdiction", "Bid Name", "Open Date", "Closed Date", "Countdown", "Status"];
+  const csvRows = rows.map((bid) => [
+    `"${bid.jurisdiction ?? ""}"`,
+    `"${bid.bid_name ?? ""}"`,
+    `"${formatDate(bid.open_date)}"`,
+    `"${formatDate(bid.closing_date)}"`,
+    `"${getCountdown(bid.closing_date)}"`,
+    `"${bid.bid_type || "Unknown"}"`,
+  ]);
+  return [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
+};
+
+const truncate = (text) => !text ? "-" : text.length > 30 ? text.slice(0, 30) + "..." : text;
+
 export default BidTable;
-
-
-
-
-
-
-
-
-
-
-
-
-

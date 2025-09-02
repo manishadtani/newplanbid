@@ -1,128 +1,144 @@
-// src/hooks/usePlan.js
+// src/hooks/usePlan.js - Enhanced Plan Hook with New Restrictions
 import { useSelector } from 'react-redux';
-import { canAccessFeature, getFeatureLimit, getFeatureRestrictionMessage, isFreeOrBasicPlan } from '../hooks/planHelpers';
+import { useCallback, useMemo } from 'react';
+import { 
+  isFeatureRestricted,
+  getFeatureRestriction, 
+  getRestrictionPopupData,
+  shouldBlurBids,
+  getBidBlurConfig,
+  validateFeatureUsage
+} from '../hooks/planHelpers'; // 🔥 Fixed import path
 
-/**
- * Custom hook for plan-based feature access
- * @returns {Object} - Plan utilities and user plan data
- */
 export const usePlan = () => {
-  // Get user plan from Redux store
   const userPlan = useSelector((state) => state.login?.user?.plan);
   const isLoggedIn = useSelector((state) => !!state.login?.user);
 
-  /**
-   * Check if user can access a feature
-   * @param {string} feature - Feature name to check
-   * @returns {boolean}
-   */
-  const hasFeatureAccess = (feature) => {
-    if (!isLoggedIn || !userPlan) return false;
-    return canAccessFeature(userPlan, feature);
-  };
-
-  /**
-   * Get feature limit information
-   * @param {string} limitType - Type of limit to check
-   * @param {number} currentUsage - Current usage (optional)
-   * @returns {Object} - {remaining, total, canUse}
-   */
-  const getLimit = (limitType, currentUsage = 0) => {
-    return getFeatureLimit(userPlan, limitType, currentUsage);
-  };
-
-  /**
-   * Get restriction message for a feature
-   * @param {string} feature - Feature name
-   * @returns {Object} - {title, message, needsUpgrade}
-   */
-  const getRestrictionMessage = (feature) => {
-    return getFeatureRestrictionMessage(feature, userPlan);
-  };
-
-  /**
-   * Check if user should see upgrade prompts
-   * @returns {boolean}
-   */
-  const shouldShowUpgrade = () => {
-    return isFreeOrBasicPlan(userPlan);
-  };
-
-  /**
-   * Validate feature usage before action
-   * @param {string} feature - Feature to validate
-   * @param {Function} onRestricted - Callback when restricted
-   * @param {number} currentUsage - Current usage count (optional)
-   * @returns {boolean} - True if can proceed, false if restricted
-   */
-  const validateFeatureUsage = (feature, onRestricted, currentUsage = 0) => {
-    if (!hasFeatureAccess(feature)) {
-      const restriction = getRestrictionMessage(feature);
-      onRestricted(restriction.title, restriction.message, feature, restriction.needsUpgrade);
-      return false;
-    }
-
-    // For features with limits, check remaining usage
-    if (['export', 'follow', 'bookmark', 'saved_search'].includes(feature)) {
-      const limit = getLimit(feature, currentUsage);
-      if (!limit.canUse) {
-        const restriction = getRestrictionMessage(feature);
-        onRestricted(restriction.title, restriction.message, feature, restriction.needsUpgrade);
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  /**
-   * Get plan display information
-   * @returns {Object} - Plan display data
-   */
-  const getPlanInfo = () => {
+  // Plan info with restriction details
+  const planInfo = useMemo(() => {
     if (!userPlan) return null;
     
     return {
       name: userPlan.name,
       code: userPlan.plan_code,
       isFree: userPlan.plan_code === '001',
-      limits: {
-        export: userPlan.max_export,
-        follow: userPlan.max_follow,
-        bookmark: userPlan.max_bookmark,
-        savedSearch: userPlan.max_saved_search,
-        visibleBids: userPlan.max_visible_bids
-      },
-      features: {
-        bidSummary: userPlan.access_bid_summary,
-        advanceSearch: userPlan.advance_search_filter
-      },
-      pricing: {
-        monthly: userPlan.monthly_price,
-        annual: userPlan.annual_price
-      }
+      isStarter: userPlan.plan_code === '002', 
+      isEssentials: userPlan.plan_code === '003',
+      displayName: userPlan.name || 'Free Plan'
     };
-  };
+  }, [userPlan]);
+
+  // Feature restriction checkers
+  const checkRestriction = useCallback((feature) => {
+    return getFeatureRestriction(userPlan, feature);
+  }, [userPlan]);
+
+  const isRestricted = useCallback((feature) => {
+    return isFeatureRestricted(userPlan, feature);
+  }, [userPlan]);
+
+  // Popup data generator
+  const getPopupData = useCallback((feature) => {
+    return getRestrictionPopupData(feature, userPlan);
+  }, [userPlan]);
+
+  // Bid blur configuration
+  const blurConfig = useMemo(() => {
+    return getBidBlurConfig(userPlan);
+  }, [userPlan]);
+
+  const shouldBlurBid = useCallback((bidIndex) => {
+    return shouldBlurBids(userPlan, bidIndex);
+  }, [userPlan]);
+
+  // 🔥 FIXED: Feature validation with popup trigger
+  const validateAndExecute = useCallback((feature, onRestricted, executeFunction) => {
+    const restriction = checkRestriction(feature);
+    
+    if (restriction.restricted) {
+      const popupData = getPopupData(feature);
+      onRestricted(popupData);
+      return false;
+    }
+    
+    // Execute the function if not restricted
+    if (executeFunction) {
+      executeFunction();
+    }
+    return true;
+  }, [checkRestriction, getPopupData]);
+
+  // 🔥 NEW: Enhanced validateFeatureUsage wrapper for this hook
+  const validateFeatureUsageWrapper = useCallback((feature, showRestrictionCallback, currentUsage = 0) => {
+    if (!userPlan) {
+      showRestrictionCallback(
+        "Login Required",
+        "Please login to access this feature.",
+        "Authentication Required",
+        false
+      );
+      return false;
+    }
+
+    const restriction = getFeatureRestriction(userPlan, feature);
+    
+    if (restriction.restricted) {
+      const popupData = getRestrictionPopupData(feature, userPlan);
+      showRestrictionCallback(
+        popupData.title,
+        popupData.message,
+        popupData.feature,
+        popupData.needsUpgrade
+      );
+      return false;
+    }
+
+    // Check usage limits for features that have limits
+    if (restriction.hasLimit && feature === 'follow') {
+      const FOLLOW_LIMIT = 25; // Standard follow limit
+      
+      if (currentUsage >= FOLLOW_LIMIT) {
+        showRestrictionCallback(
+          "Follow Limit Reached",
+          `You've reached the maximum of ${FOLLOW_LIMIT} followed bids. Upgrade for unlimited follows.`,
+          "Follow Limit",
+          true
+        );
+        return false;
+      }
+    }
+
+    return true; // Feature is allowed
+  }, [userPlan, getFeatureRestriction, getRestrictionPopupData]);
 
   return {
     // Plan data
     userPlan,
-    isLoggedIn,
-    planInfo: getPlanInfo(),
+    isLoggedIn, 
+    planInfo,
     
-    // Feature checking
-    hasFeatureAccess,
-    getLimit,
-    getRestrictionMessage,
-    shouldShowUpgrade,
-    validateFeatureUsage,
+    // Restriction checking
+    isRestricted,
+    checkRestriction,
+    getPopupData,
+    validateAndExecute,
+    validateFeatureUsage: validateFeatureUsageWrapper, // 🔥 Export the wrapper function
     
-    // Quick access helpers
-    canExport: hasFeatureAccess('export'),
-    canFollow: hasFeatureAccess('follow'),
-    canBookmark: hasFeatureAccess('bookmark'),
-    canAccessBidSummary: hasFeatureAccess('bid_summary'),
-    canUseAdvanceSearch: hasFeatureAccess('advance_search'),
-    canSaveSearch: hasFeatureAccess('saved_search')
+    // Bid blur functionality
+    blurConfig,
+    shouldBlurBid,
+    
+    // Quick access checkers for components
+    restrictions: {
+      bidSummary: isRestricted('bid_summary'),
+      share: isRestricted('share'),
+      export: isRestricted('export'),
+      follow: isRestricted('follow'),
+      bookmark: isRestricted('bookmark'),
+      advanceSearch: isRestricted('advance_search'),
+      savedSearch: isRestricted('saved_search'),
+      sorting: isRestricted('sorting'), // ✅ NEW: Sorting restriction
+      entityDropdown: isRestricted('blur_entity_dropdown') // ✅ NEW: Entity dropdown restriction
+    }
   };
 };

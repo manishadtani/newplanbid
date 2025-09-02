@@ -74,7 +74,14 @@ function Dashboard() {
     handleOpenFilter
   } = useDashboardUI();
 
-  const { validateFeatureUsage, hasFeatureAccess, getLimit } = usePlan();
+  const {
+    planInfo,
+    restrictions,
+    validateAndExecute,
+    isRestricted,
+    blurConfig,
+    shouldBlurBid
+  } = usePlan();
 
   // 🔥 REMAINING LOCAL STATE
   const [bidCount, setBidCount] = useState({ count: 0, new_bids: 0 });
@@ -141,58 +148,16 @@ function Dashboard() {
     return currentBids.map(bid => bid.id).filter(id => id);
   };
 
-
-  // const handleExport = async () => {
-  //   setExportLoading(true);
-
-  //   try {
-  //     const bidIds = getCurrentBidIds();
-
-  //     if (bidIds.length === 0) {
-  //       showFeatureRestriction(
-  //         "No Data to Export",
-  //         "No bids found to export. Please apply filters or search to display bids.",
-  //         "Export Feature",
-  //         false
-  //       );
-  //       setExportLoading(false);
-  //       return;
-  //     }
-
-  //     console.log("🔥 Exporting bid IDs:", bidIds);
-
-  //     const result = await exportBidsToCSV(bidIds);
-
-  //     if (result.success) {
-  //       console.log("✅ Export successful");
-  //       // Optionally show success message
-  //     } else if (result.error) {
-  //       // Show restriction popup with backend error message
-  //       showFeatureRestriction(
-  //         result.title || "Export Failed",
-  //         result.message,
-  //         "Export Feature",
-  //         result.needsUpgrade || false
-  //       );
-  //     }
-
-  //   } catch (error) {
-  //     console.error("❌ Export error:", error);
-  //     showFeatureRestriction(
-  //       "Export Failed",
-  //       "Something went wrong while exporting. Please try again.",
-  //       "Export Feature",
-  //       false
-  //     );
-  //   } finally {
-  //     setExportLoading(false);
-  //   }
-  // };
-
   const handleExport = async () => {
-    // Client-side plan validation
-    if (!validateFeatureUsage('export', showFeatureRestriction)) {
-      return; // Popup automatically shown by validateFeatureUsage
+    // 🔥 FIX: For FREE users (001), show FeatureRestrictionPopup directly
+    if (restrictions?.export) {
+      showFeatureRestriction(
+        "🔒 Export Feature Locked",
+        "Upgrade your plan to export bid data in CSV format for analysis and reporting.",
+        "Export Feature",
+        true
+      );
+      return;
     }
 
     setExportLoading(true);
@@ -211,116 +176,128 @@ function Dashboard() {
         return;
       }
 
-      // Proceed with API call (keep existing logic as fallback)
+      console.log("🔥 Exporting bid IDs:", bidIds);
+
       const result = await exportBidsToCSV(bidIds);
 
       if (result.success) {
-        console.log("Export successful");
+        console.log("✅ Export successful");
+        // Optionally show success message
       } else if (result.error) {
-        // Fallback to API error messages if plan validation missed something
+        // Show restriction popup with backend error message
         showFeatureRestriction(
           result.title || "Export Failed",
-          result.message,
+          result.message || "Please upgrade your plan to export bids.",
           "Export Feature",
-          result.needsUpgrade || false
+          result.needsUpgrade !== false
         );
       }
 
     } catch (error) {
-      console.error("Export error:", error);
-      showFeatureRestriction(
-        "Export Failed",
-        "Please Upgrade your plan for exporting Bids.",
-        "Export Feature",
-        false
-      );
+      console.error("❌ Export error:", error);
+
+      // Check if it's a plan restriction error
+      if (error.response?.status === 403 || error.response?.data?.error) {
+        showFeatureRestriction(
+          error.response?.data?.title || "Export Failed",
+          error.response?.data?.message || "Please upgrade your plan to export bids.",
+          "Export Feature",
+          true
+        );
+      } else {
+        showFeatureRestriction(
+          "Export Failed",
+          "Something went wrong while exporting. Please try again.",
+          "Export Feature",
+          false
+        );
+      }
     } finally {
       setExportLoading(false);
     }
   };
-
   // Dashboard.jsx - Updated handleFollowBid function
 
-const handleFollowBid = async (bidId) => {
-  // Plan validation first
-  if (!validateFeatureUsage('follow', showFeatureRestriction, followedBids.size)) {
-    return;
-  }
+  const handleFollowBid = async (bidId) => {
+    // Plan validation first
+    if (!validateFeatureUsage('follow', showFeatureRestriction, followedBids.size)) {
+      return;
+    }
 
-  // Add bid to loading state
-  setFollowLoading(prev => new Set([...prev, bidId]));
+    // Add bid to loading state
+    setFollowLoading(prev => new Set([...prev, bidId]));
 
-  try {
-    console.log("🔥 Following bid with ID:", bidId);
+    try {
+      console.log("🔥 Following bid with ID:", bidId);
 
-    const result = await followBids(bidId);
-    console.log("✅ Follow successful:", result);
+      const result = await followBids(bidId);
+      console.log("✅ Follow successful:", result);
 
-    // Update followed bids state
-    setFollowedBids(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(bidId)) {
-        // If already followed, remove it (unfollow)
-        newSet.delete(bidId);
-        console.log("🔄 Unfollowed bid:", bidId);
-      } else {
-        // If not followed, add it
-        newSet.add(bidId);
-        console.log("➕ Followed bid:", bidId);
-      }
-      return newSet;
-    });
-
-  } catch (error) {
-    console.error("❌ Follow error:", error);
-
-    // 🔥 NEW: Handle "already following" error
-    const errorDetail = error.response?.data?.detail || "";
-    
-    if (errorDetail.includes("already following")) {
-      // If already following, just add to followed state
-      console.log("ℹ️ Already following - updating state");
-      
+      // Update followed bids state
       setFollowedBids(prev => {
         const newSet = new Set(prev);
-        newSet.add(bidId);
+        if (newSet.has(bidId)) {
+          // If already followed, remove it (unfollow)
+          newSet.delete(bidId);
+          console.log("🔄 Unfollowed bid:", bidId);
+        } else {
+          // If not followed, add it
+          newSet.add(bidId);
+          console.log("➕ Followed bid:", bidId);
+        }
         return newSet;
       });
 
-      // Show info message instead of error
-      showFeatureRestriction(
-        "Already Following",
-        "You are already following this bid. Updates will be sent to your email.",
-        "Follow Status",
-        false // No upgrade button needed
-      );
-      
-    } else if (error.response?.status === 403 || error.response?.data?.error) {
-      // Plan restriction errors
-      showFeatureRestriction(
-        error.response.data.title || "Follow Failed",
-        error.response.data.message || "Unable to follow this bid.",
-        "Follow Feature",
-        error.response.data.needsUpgrade || true
-      );
-    } else {
-      // Other errors
-      showFeatureRestriction(
-        "Follow Failed",
-        "Something went wrong while following this bid. Please try again.",
-        "Follow Feature",
-        false
-      );
+    } catch (error) {
+      console.error("❌ Follow error:", error);
+
+      // 🔥 NEW: Handle "already following" error
+      const errorDetail = error.response?.data?.detail || "";
+
+      if (errorDetail.includes("already following")) {
+        // If already following, just add to followed state
+        console.log("ℹ️ Already following - updating state");
+
+        setFollowedBids(prev => {
+          const newSet = new Set(prev);
+          newSet.add(bidId);
+          return newSet;
+        });
+
+        // Show info message instead of error
+        showFeatureRestriction(
+          "Already Following",
+          "You are already following this bid. Updates will be sent to your email.",
+          "Follow Status",
+          false // No upgrade button needed
+        );
+
+      } else if (error.response?.status === 403 || error.response?.data?.error) {
+        // Plan restriction errors
+        showFeatureRestriction(
+          error.response.data.title || "Follow Failed",
+          error.response.data.message || "Unable to follow this bid.",
+          "Follow Feature",
+          error.response.data.needsUpgrade || true
+        );
+      } else {
+        // Other errors
+        showFeatureRestriction(
+          "Follow Failed",
+          "Something went wrong while following this bid. Please try again.",
+          "Follow Feature",
+          false
+        );
+      }
+    } finally {
+      // Remove bid from loading state
+      setFollowLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bidId);
+        return newSet;
+      });
     }
-  } finally {
-    // Remove bid from loading state
-    setFollowLoading(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(bidId);
-      return newSet;
-    });
-  }
-};
+  };
 
 
   // 🔥 REPLACE YOUR EXISTING popstate useEffect WITH THIS:
@@ -444,7 +421,7 @@ const handleFollowBid = async (bidId) => {
       num: bidCount?.count || 0,
       tag: "FILTER",
       description: "Narrow down bids by industry, status, location and more.",
-      onClick: () => navigate("/dashboard?page=1&pageSize=25&bid_type=Active&ordering=closing_date") // 🔥 CLICK HANDLER ADD KIYA
+      onClick: () => navigate("/dashboard?page=1&pageSize=25&bid_type=Active&ordering=closing_date")
     },
     {
       id: 2,
@@ -466,14 +443,16 @@ const handleFollowBid = async (bidId) => {
       num: bookmarkedCount,
       tag: "SAVE",
       description: "Bookmark bids you're interested in so you can check them out later.",
-      onClick: () => navigate("/dashboard/bookmarkBids") // 🔥 CLICK HANDLER ADD KIYA
+      onClick: () => navigate("/dashboard/bookmarkBids")
     },
     {
       id: 5,
       title: "Followed",
-      num: `${followedBids.size}/25`, // 🚀 UPDATED: Show actual followed count
+      num: restrictions?.follow ? `0/25` : `${followedBids.size}/25`,
       tag: "FOLLOW",
-      description: "Get instant updates on changes & deadlines for these bids."
+      description: restrictions?.follow
+        ? "Upgrade to follow bids and get instant updates"
+        : "Get instant updates on changes & deadlines for these bids."
     }
   ];
 
@@ -901,18 +880,24 @@ const handleFollowBid = async (bidId) => {
                 <div className="flex gap-4 items-center">
                   {/* 🚀 UPDATED EXPORT BUTTON WITH LOADING STATE */}
                   <div
-                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading || !hasFeatureAccess('export') ? 'opacity-50' : ''
+                    className={`bg-btn p-4 rounded-[16px] cursor-pointer relative ${exportLoading || restrictions?.export ? 'opacity-50' : ''
                       }`}
-                    onClick={exportLoading || !hasFeatureAccess('export') ? null : handleExport}
+                    onClick={exportLoading || restrictions?.export ? null : handleExport}
                     id="export"
+                    title={restrictions?.export ? "🔒 Upgrade to export bids" : "Export bids"}
                   >
                     {exportLoading ? (
                       <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <img src="/export.png" className="w-6" alt="Export" />
                     )}
+                    {/* 🔥 Add lock indicator for restricted users */}
+                    {restrictions?.export && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <i className="fas fa-lock text-xs text-black"></i>
+                      </div>
+                    )}
                   </div>
-
                   <ProfessionalSavedSearchDropdown
                     savedSearches={savedSearches}
                     selectedSavedSearch={selectedSavedSearch}
@@ -932,6 +917,28 @@ const handleFollowBid = async (bidId) => {
             </div>
           </div>
 
+          {planInfo?.isFree && (
+            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <i className="fas fa-crown text-yellow-400 text-lg"></i>
+                  <div>
+                    <p className="text-white font-medium">Free Plan Active</p>
+                    <p className="text-white/70 text-sm">
+                      Limited features enabled. Upgrade to unlock full access to all bids and premium features.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate("/pricing")}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="w-full" ref={bidsSectionRef}>
             {(loading || (isBookmarkView && bookmarkLoading)) ? (
               <div className="text-white text-center py-10">
@@ -948,13 +955,18 @@ const handleFollowBid = async (bidId) => {
                 totalCount={isBookmarkView ? bookmarkedBids.length : (bidsInfo?.count || 0)}
                 currentSortField={appliedFilters.ordering || "closing_date"}
                 currentSortOrder={appliedFilters.ordering?.startsWith('-') ? 'desc' : 'asc'}
-                onSort={handleSort}
+                onSort={restrictions?.bidSummary ? () => { } : handleSort} // Disable sorting if restricted
+                sortingDisabled={restrictions?.bidSummary} // Pass sortingDisabled prop
                 ref={tableRef}
                 viewType={isBookmarkView ? 'saved' : 'total'}
                 onFeatureRestriction={showFeatureRestriction}
                 onFollowBid={handleFollowBid}
                 followedBids={followedBids}
                 followLoading={followLoading}
+                planInfo={planInfo}
+                blurConfig={blurConfig}
+                shouldBlurBid={shouldBlurBid}
+                restrictions={restrictions}
               />
             )}
 

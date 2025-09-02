@@ -1,132 +1,249 @@
-// src/utils/planHelpers.js
+// src/utils/planHelpers.js - Enhanced Plan Restrictions
 
 /**
- * Check if user can access a specific feature based on their plan
- * @param {Object} userPlan - Complete user plan object from Redux
- * @param {string} feature - Feature name to check
- * @returns {boolean} - True if user can access the feature
+ * Plan-specific restriction configurations
  */
-export const canAccessFeature = (userPlan, feature) => {
-  if (!userPlan) return false;
-  
-  const featureMap = {
-    'export': () => userPlan.max_export > 0,
-    'follow': () => userPlan.max_follow > 0,
-    'bookmark': () => userPlan.max_bookmark > 0,
-    'bid_summary': () => userPlan.access_bid_summary === true,
-    'advance_search': () => userPlan.advance_search_filter === true,
-    'saved_search': () => userPlan.max_saved_search > 0,
-  };
-  
-  const checker = featureMap[feature];
-  return checker ? checker() : false;
+export const PLAN_RESTRICTIONS = {
+  '001': { // Free Plan (Sneak)
+    bid_summary: { restricted: true, message: "Upgrade your plan to see detailed bid summaries with full content and insights." },
+    share: { restricted: true, message: "Upgrade your plan to share bids with your team and colleagues." },
+    export: { restricted: true, message: "Upgrade your plan to export bid data in CSV format for analysis." },
+    follow: { restricted: true, message: "Upgrade your plan to follow important bids and get notifications." },
+    bookmark: { restricted: true, message: "Upgrade your plan to bookmark bids for quick access later." },
+    advance_search: { restricted: true, message: "Upgrade your plan to use advanced search filters." },
+    saved_search: { restricted: true, message: "Upgrade your plan to save your custom searches." },
+    sorting: { restricted: true, message: "Upgrade your plan to sort bids by different criteria." },
+    blur_bids: { 
+      enabled: true, 
+      blur_after: 3, // First 3 bids normal, rest blurred
+      blur_columns: ['bid_name', 'open_date', 'closing_date', 'countdown'] 
+    },
+    blur_entity_dropdown: { restricted: true, message: "Upgrade to filter by entity types." }
+  },
+  '002': { // Starter Plan
+    bid_summary: { restricted: false }, // ✅ Allow bid summary access
+    share: { restricted: false },
+    export: { restricted: false, has_limit: true },
+    follow: { restricted: false, has_limit: true },
+    bookmark: { restricted: false, has_limit: true },
+    advance_search: { restricted: true, message: "Upgrade to Essentials for advanced search" },
+    saved_search: { restricted: false, has_limit: true },
+    sorting: { restricted: false }, // ✅ Allow sorting for Starter
+    blur_bids: { enabled: false }, // ✅ No blur for Starter
+    blur_entity_dropdown: { restricted: false } // ✅ Allow entity dropdown for Starter
+  },
+  '003': { // Essentials Plan
+    bid_summary: { restricted: false },
+    share: { restricted: false },
+    export: { restricted: false, has_limit: true },
+    follow: { restricted: false, has_limit: true },
+    bookmark: { restricted: false, has_limit: true },
+    advance_search: { restricted: false },
+    saved_search: { restricted: false, has_limit: true },
+    sorting: { restricted: false },
+    blur_bids: { enabled: false },
+    blur_entity_dropdown: { restricted: false }
+  }
 };
 
 /**
- * Get remaining limit for a specific feature
- * @param {Object} userPlan - Complete user plan object from Redux
- * @param {string} limitType - Type of limit to check
- * @param {number} currentUsage - Current usage count (optional)
- * @returns {Object} - {remaining, total, canUse}
+ * Check if feature is restricted for current plan
  */
-export const getFeatureLimit = (userPlan, limitType, currentUsage = 0) => {
-  if (!userPlan) {
-    return { remaining: 0, total: 0, canUse: false };
+export const isFeatureRestricted = (userPlan, feature) => {
+  console.log(userPlan, feature );
+  if (!userPlan?.plan_code) return true;
+  
+  const restrictions = PLAN_RESTRICTIONS[userPlan.plan_code];
+  if (!restrictions || !restrictions[feature]) return false;
+  
+  return restrictions[feature].restricted === true;
+};
+
+/**
+ * Get feature restriction details
+ */
+export const getFeatureRestriction = (userPlan, feature) => {
+  if (!userPlan?.plan_code) {
+    return {
+      restricted: true,
+      message: "Please login to access this feature",
+      needsUpgrade: true
+    };
   }
   
-  const limitMap = {
-    'export': userPlan.max_export,
-    'follow': userPlan.max_follow,
-    'bookmark': userPlan.max_bookmark,
-    'saved_search': userPlan.max_saved_search,
-    'visible_bids': userPlan.max_visible_bids
-  };
+  const restrictions = PLAN_RESTRICTIONS[userPlan.plan_code];
+  if (!restrictions || !restrictions[feature]) {
+    return { restricted: false, message: null, needsUpgrade: false };
+  }
   
-  const total = limitMap[limitType] || 0;
-  const remaining = Math.max(0, total - currentUsage);
-  
+  const restriction = restrictions[feature];
   return {
-    remaining,
-    total,
-    canUse: remaining > 0 && total > 0
+    restricted: restriction.restricted || false,
+    message: restriction.message || null,
+    needsUpgrade: restriction.restricted === true,
+    hasLimit: restriction.has_limit || false
   };
 };
 
 /**
- * Get feature restriction message for popup
- * @param {string} feature - Feature name
- * @param {Object} userPlan - User's current plan
- * @returns {Object} - {title, message, needsUpgrade}
+ * Check if bids should be blurred
  */
-export const getFeatureRestrictionMessage = (feature, userPlan) => {
-  const planName = userPlan?.name || 'Current Plan';
+export const shouldBlurBids = (userPlan, bidIndex) => {
+  if (!userPlan?.plan_code) return true;
   
-  const messages = {
+  const restrictions = PLAN_RESTRICTIONS[userPlan.plan_code];
+  if (!restrictions?.blur_bids?.enabled) return false;
+  
+  return bidIndex >= restrictions.blur_bids.blur_after;
+};
+
+/**
+ * Get blur configuration for bids
+ */
+export const getBidBlurConfig = (userPlan) => {
+  if (!userPlan?.plan_code) {
+    return { 
+      enabled: true, 
+      blur_after: 0, 
+      blur_columns: ['bid_name', 'open_date', 'closing_date', 'countdown'] 
+    };
+  }
+  
+  const restrictions = PLAN_RESTRICTIONS[userPlan.plan_code];
+  return restrictions?.blur_bids || { enabled: false };
+};
+
+/**
+ * Enhanced restriction message generator
+ */
+export const getRestrictionPopupData = (feature, userPlan) => {
+  const planName = userPlan?.name || 'Free Plan';
+  const restriction = getFeatureRestriction(userPlan, feature);
+  
+  const popupData = {
+    bid_summary: {
+      title: "🔒 Bid Summary Locked",
+      message: restriction.message || "Upgrade your plan to access detailed bid summaries with full content and insights.",
+      icon: "fa-file-alt",
+      ctaText: "Upgrade to View Summary"
+    },
+    share: {
+      title: "🔒 Share Feature Locked", 
+      message: restriction.message || "Upgrade your plan to share bids with your team and colleagues.",
+      icon: "fa-share-alt",
+      ctaText: "Upgrade to Share Bids"
+    },
     export: {
-      title: 'Export Limit Reached',
-      message: `Your ${planName} allows ${userPlan?.max_export || 0} exports. Upgrade to get more export access.`,
-      needsUpgrade: true
+      title: "🔒 Export Feature Locked",
+      message: restriction.message || "Upgrade your plan to export bid data in CSV format for analysis.",
+      icon: "fa-download",
+      ctaText: "Upgrade to Export Data"
     },
     follow: {
-      title: 'Follow Limit Reached', 
-      message: `Your ${planName} allows ${userPlan?.max_follow || 0} followed bids. Upgrade to follow more bids.`,
-      needsUpgrade: true
+      title: "🔒 Follow Feature Locked",
+      message: restriction.message || "Upgrade your plan to follow important bids and get notifications.",
+      icon: "fa-heart",
+      ctaText: "Upgrade to Follow Bids"
     },
     bookmark: {
-      title: 'Bookmark Limit Reached',
-      message: `Your ${planName} allows ${userPlan?.max_bookmark || 0} bookmarks. Upgrade to bookmark more bids.`, 
-      needsUpgrade: true
+      title: "🔒 Bookmark Feature Locked",
+      message: restriction.message || "Upgrade your plan to bookmark bids for quick access later.",
+      icon: "fa-bookmark",
+      ctaText: "Upgrade to Bookmark"
     },
-    bid_summary: {
-      title: 'Premium Feature',
-      message: `Bid summary access is not available in your ${planName}. Upgrade to access detailed bid summaries.`,
-      needsUpgrade: true
+    sorting: {
+      title: "🔒 Sorting Feature Locked",
+      message: restriction.message || "Upgrade your plan to sort bids by different criteria.",
+      icon: "fa-sort",
+      ctaText: "Upgrade to Sort Bids"
     },
-    advance_search: {
-      title: 'Advanced Search Required',
-      message: `Advanced search filters are not available in your ${planName}. Upgrade to access powerful search filters.`,
-      needsUpgrade: true  
-    },
-    saved_search: {
-      title: 'Saved Search Limit',
-      message: `Your ${planName} allows ${userPlan?.max_saved_search || 0} saved searches. Upgrade to save more searches.`,
-      needsUpgrade: true
+    blur_entity_dropdown: {
+      title: "🔒 Filter Feature Locked",
+      message: restriction.message || "Upgrade your plan to filter bids by entity types.",
+      icon: "fa-filter",
+      ctaText: "Upgrade to Filter"
     }
   };
   
-  return messages[feature] || {
-    title: 'Feature Restricted',
-    message: `This feature is not available in your ${planName}. Please upgrade your plan.`,
-    needsUpgrade: true
+  return {
+    ...popupData[feature],
+    restricted: restriction.restricted,
+    needsUpgrade: restriction.needsUpgrade,
+    currentPlan: planName,
+    feature: feature
   };
 };
 
 /**
- * Check if user's plan is free/basic
- * @param {Object} userPlan - User plan object
- * @returns {boolean}
+ * 🚀 NEW: Feature Usage Validation Function
+ * This function validates feature usage based on plan restrictions and limits
  */
-export const isFreeOrBasicPlan = (userPlan) => {
-  if (!userPlan) return true;
-  return userPlan.plan_code === '001' || userPlan.monthly_price === '0.00';
+export const validateFeatureUsage = (feature, showRestrictionCallback, currentUsage = 0) => {
+  // Get user plan from Redux store or localStorage
+  const userPlan = getUserPlan(); // You'll need to implement this function
+  
+  if (!userPlan) {
+    showRestrictionCallback(
+      "Login Required",
+      "Please login to access this feature.",
+      "Authentication Required",
+      false
+    );
+    return false;
+  }
+
+  const restriction = getFeatureRestriction(userPlan, feature);
+  
+  if (restriction.restricted) {
+    const popupData = getRestrictionPopupData(feature, userPlan);
+    showRestrictionCallback(
+      popupData.title,
+      popupData.message,
+      popupData.feature,
+      popupData.needsUpgrade
+    );
+    return false;
+  }
+
+  // Check usage limits for features that have limits
+  if (restriction.hasLimit && feature === 'follow') {
+    const FOLLOW_LIMIT = 25; // Standard follow limit
+    
+    if (currentUsage >= FOLLOW_LIMIT) {
+      showRestrictionCallback(
+        "Follow Limit Reached",
+        `You've reached the maximum of ${FOLLOW_LIMIT} followed bids. Upgrade for unlimited follows.`,
+        "Follow Limit",
+        true
+      );
+      return false;
+    }
+  }
+
+  return true; // Feature is allowed
 };
 
 /**
- * Get plan upgrade suggestions
- * @param {Object} userPlan - Current user plan
- * @returns {Array} - Array of suggested plans
+ * Helper function to get user plan (implement based on your Redux structure)
  */
-export const getPlanUpgradeSuggestions = (userPlan) => {
-  if (!userPlan) return [];
-  
-  const currentPlanCode = userPlan.plan_code;
-  
-  // Suggest higher tier plans based on current plan
-  if (currentPlanCode === '001') { // Sneak
-    return ['002', '003']; // Suggest Starter & Essentials
-  } else if (currentPlanCode === '002') { // Starter  
-    return ['003']; // Suggest Essentials
+const getUserPlan = () => {
+  // This should be implemented based on how you access the Redux store
+  // For now, returning null - you'll need to implement this
+  try {
+    // Option 1: If you can access Redux store directly
+    // const store = getStore(); // You'll need to implement getStore()
+    // return store.getState().login?.user?.plan;
+    
+    // Option 2: Get from localStorage as fallback
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      const user = JSON.parse(userString);
+      return user?.plan;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting user plan:', error);
+    return null;
   }
-  
-  return []; // Already on highest plan
 };
