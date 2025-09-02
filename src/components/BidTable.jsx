@@ -53,28 +53,7 @@ const BidTable = forwardRef(({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🔥 FIX 1: Enhanced row click with bid summary restriction for FREE users only
-  // const handleRowClick = (id, bidIndex) => {
-  //   // 🔥 FIXED: Only show restriction for FREE plan (001)
-  //   if (planInfo?.isFree) {
-  //     // For FREE users - show restriction popup
-  //     validateAndExecute(
-  //       'bid_summary',
-  //       (popupData) => {
-  //         onFeatureRestriction(
-  //           popupData.title,
-  //           popupData.message,
-  //           popupData.feature,
-  //           popupData.needsUpgrade
-  //         );
-  //       }
-  //     );
-  //   } else {
-  //     // 🔥 FIXED: For STARTER (002) and above - directly navigate
-  //     console.log("✅ Starter+ plan - Navigating to bid summary:", id);
-  //     navigate(`/summary/${id}`);
-  //   }
-  // };
+  
 
 
   const handleRowClick = (id, bidIndex) => {
@@ -92,62 +71,6 @@ const BidTable = forwardRef(({
       navigate(`/summary/${id}`);
     }
   };
-
-
-  //  <td className="px-4 py-4 text-center">
-  //                 <button
-  //                   onClick={(e) => {
-  //                     e.stopPropagation();
-  //                     if (restrictions?.follow) {
-  //                       onFeatureRestriction(
-  //                         "🔒 Follow Feature Locked",
-  //                         "Upgrade your plan to follow important bids and get notifications.",
-  //                         "Follow Feature",
-  //                         true
-  //                       );
-  //                     } else {
-  //                       handleFollowClick(e, bid.id);
-  //                     }
-  //                   }}
-  //                   disabled={isLoading}
-  //                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 relative ${restrictions?.follow
-  //                       ? 'opacity-50 bg-white/10'
-  //                       : isLoading
-  //                         ? 'opacity-50 cursor-not-allowed'
-  //                         : 'hover:scale-110 cursor-pointer'
-  //                     }`}
-  //                   title={
-  //                     restrictions?.follow
-  //                       ? "Upgrade to follow bids"
-  //                       : isFollowed
-  //                         ? "Unfollow this bid"
-  //                         : "Follow this bid"
-  //                   }
-  //                 >
-  //                   {restrictions?.follow ? (
-  //                     <i className="fas fa-lock text-sm text-white/60"></i>
-  //                   ) : isLoading ? (
-  //                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-  //                   ) : (
-  //                     <i
-  //                       className={`fas text-lg transition-colors ${isFollowed
-  //                           ? "fa-minus-circle text-white-400 hover:text-white-300"
-  //                           : "fa-plus-circle text-white-400 hover:text-white-300"
-  //                         }`}
-  //                     />
-  //                   )}
-  //                 </button>
-  //               </td>
-
-
-
-
-
-
-
-
-
-
 
 
   // Enhanced follow click with restriction check
@@ -192,9 +115,8 @@ const BidTable = forwardRef(({
   const shouldBlurColumn = (columnName, bidIndex) => {
 
     if (!blurConfig.enabled) return false;
-    console.log(!shouldBlurBid(bidIndex))
-    console.log(bidIndex)
-    if (!shouldBlurBid(bidIndex)) return false;
+    
+    if (shouldBlurBid(bidIndex)) return false;
 
     return blurConfig.blur_columns?.includes(columnName) || false;
   };
