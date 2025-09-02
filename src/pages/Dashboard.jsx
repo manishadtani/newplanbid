@@ -7,7 +7,7 @@ import Pagination from "../components/Pagination";
 import FilterPanel from "../components/FilterPanel";
 import FilterPanelSaveSearch from "../components/FilterPanelSaveSearch";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getBidCount, getBids, getSavedSearches, totalBookmarkedBids, exportBidsToCSV, followBids } from "../services/bid.service";
+import { getBidCount, getBids, getSavedSearches, totalBookmarkedBids, exportBidsToCSV, followBids, totalFollowedBids } from "../services/bid.service";
 import { useDispatch, useSelector } from "react-redux";
 import { setBids } from "../redux/reducer/bidSlice";
 import { addSavedSearch } from "../redux/reducer/savedSearchesSlice";
@@ -75,19 +75,20 @@ function Dashboard() {
     validateAndExecute,
     isRestricted,
     blurConfig,
-    shouldBlurBid
+    shouldBlurBid,
+    validateFeatureUsage
   } = usePlan();
 
 
   console.log("=== PLAN DEBUG START ===");
-console.log("userPlan from redux:", useSelector((state) => state.login?.user?.plan));
-console.log("planInfo:", planInfo);
-console.log("planInfo.code:", planInfo?.code);
-console.log("planInfo.isFree:", planInfo?.isFree);
-console.log("restrictions object:", restrictions);
-console.log("restrictions.advanceSearch:", restrictions?.advanceSearch);
-console.log("=== PLAN DEBUG END ===");
-  
+  console.log("userPlan from redux:", useSelector((state) => state.login?.user?.plan));
+  console.log("planInfo:", planInfo);
+  console.log("planInfo.code:", planInfo?.code);
+  console.log("planInfo.isFree:", planInfo?.isFree);
+  console.log("restrictions object:", restrictions);
+  console.log("restrictions.advanceSearch:", restrictions?.advanceSearch);
+  console.log("=== PLAN DEBUG END ===");
+
 
   const {
     sidebarToggle,
@@ -250,6 +251,8 @@ console.log("=== PLAN DEBUG END ===");
           newSet.add(bidId);
           console.log("➕ Followed bid:", bidId);
         }
+
+
         return newSet;
       });
 
@@ -281,7 +284,7 @@ console.log("=== PLAN DEBUG END ===");
         // Plan restriction errors
         showFeatureRestriction(
           error.response.data.title || "Follow Failed",
-          error.response.data.message || "Unable to follow this bid.",
+          error.response.data.message || "Upgrade your plan to follow more bid.",
           "Follow Feature",
           error.response.data.needsUpgrade || true
         );
@@ -303,6 +306,28 @@ console.log("=== PLAN DEBUG END ===");
       });
     }
   };
+
+
+
+  // Fetch followed bids on component mount
+  useEffect(() => {
+    const fetchFollowedBids = async () => {
+      try {
+        const followedBidsData = await totalFollowedBids();
+        // Assuming API returns array of bid objects with id property
+        const followedBidsSet = new Set(followedBidsData.map(bid => bid.bid?.id || bid.id));
+        setFollowedBids(followedBidsSet);
+        console.log("✅ Followed bids loaded:", followedBidsSet);
+      } catch (error) {
+        console.error("❌ Error loading followed bids:", error);
+      }
+    };
+
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      fetchFollowedBids();
+    }
+  }, []); // Run once on mount
 
 
   // 🔥 REPLACE YOUR EXISTING popstate useEffect WITH THIS:
@@ -453,7 +478,7 @@ console.log("=== PLAN DEBUG END ===");
     {
       id: 5,
       title: "Followed",
-      num: restrictions?.follow ? `0/25` : `${followedBids.size}/25`,
+      num: restrictions?.follow ? `0/${followedBids.size}` : `${followedBids.size}/10`,
       tag: "FOLLOW",
       description: restrictions?.follow
         ? "Upgrade to follow bids and get instant updates"
@@ -992,7 +1017,7 @@ console.log("=== PLAN DEBUG END ===");
             </div>
           </div>
 
-          
+
 
           <div className="w-full" ref={bidsSectionRef}>
             {(loading || (isBookmarkView && bookmarkLoading)) ? (
