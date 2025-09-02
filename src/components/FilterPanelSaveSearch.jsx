@@ -178,12 +178,12 @@ const FilterPanelSaveSearch = ({ onClose, selectedSearch, setSelectedSearch, han
   const handleSaveSearch = async (e) => {
     e.preventDefault();
 
-    if (searchOption === "create" && planInfo?.isStarter && savedSearches.length >= 1) {
-    setErrors({ 
-      name: "You've reached the maximum of 1 saved search. Upgrade to Essentials for unlimited saved searches." 
-    });
-    return;
-  }
+  //   if (searchOption === "create" && planInfo?.isStarter && savedSearches.length >= 1) {
+  //   setErrors({ 
+  //     name: "You've reached the maximum of 1 saved search. Upgrade to Essentials for unlimited saved searches." 
+  //   });
+  //   return;
+  // }
 
     setShowValidation(true);
 
